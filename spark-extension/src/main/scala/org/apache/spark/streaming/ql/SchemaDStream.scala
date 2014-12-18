@@ -58,6 +58,13 @@ class SchemaDStream(
     Some(new SchemaRDD(qlConnector.qlContext, preAnalyzedPlan))
   }
 
+  // To guard out some unsupported logical plans.
+  baseLogicalPlan match {
+    case _: Command | _: InsertIntoTable | _: CreateTableAsSelect[_] | _: WriteToFile =>
+      throw new IllegalStateException(s"logical plan $baseLogicalPlan is not supported currently")
+    case _ => Unit
+  }
+
   private lazy val preAnalyzedPlan = qlConnector.analyzePlan(baseLogicalPlan)
 
   private lazy val physicalStream = {

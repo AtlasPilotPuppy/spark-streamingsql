@@ -21,11 +21,11 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SchemaRDD
+import org.apache.spark.sql.{BooleanType, Row, StructType, SchemaRDD}
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.plans.{Inner, JoinType}
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
 
@@ -160,4 +160,66 @@ class SchemaDStream(
   def as(alias: Symbol) =
     new SchemaDStream(qlConnector, Subquery(alias.name, baseLogicalPlan))
 
+  /**
+   * Combines the tuples of two DStreams with the same schema, keeping duplicates.
+   */
+  def unionAll(otherPlan: SchemaDStream) =
+    new SchemaDStream(qlConnector, Union(baseLogicalPlan, otherPlan.baseLogicalPlan))
+
+  /**
+   * Performs a relational except on two SchemaDStreams.
+   */
+  def except(otherPlan: SchemaDStream): SchemaDStream =
+    new SchemaDStream(qlConnector, Except(baseLogicalPlan, otherPlan.baseLogicalPlan))
+
+  /**
+   * Performs a relational intersect on two SchemaDStreams
+   */
+  def intersect(otherPlan: SchemaDStream): SchemaDStream =
+    new SchemaDStream(qlConnector, Intersect(baseLogicalPlan, otherPlan.baseLogicalPlan))
+
+  /**
+   * Filters tuples using a function over the value of the specified column.
+   */
+  def where[T1](arg1: Symbol)(udf: (T1) => Boolean) =
+    new SchemaDStream(
+      qlConnector,
+      Filter(ScalaUdf(udf, BooleanType, Seq(UnresolvedAttribute(arg1.name))), baseLogicalPlan))
+
+  /**
+   * :: Experimental ::
+   * Filters tuples using a function over a `Dynamic` version of a given Row.  DynamicRows use
+   * scala's Dynamic trait to emulate an ORM of in a dynamically typed language.  Since the type of
+   * the column is not known at compile time, all attributes are converted to strings before
+   * being passed to the function.
+   */
+  @Experimental
+  def where(dynamicUdf: (DynamicRow) => Boolean) =
+    new SchemaDStream(
+      qlConnector,
+      Filter(ScalaUdf(
+        dynamicUdf, BooleanType, Seq(WrapDynamic(baseLogicalPlan.output))), baseLogicalPlan))
+
+  /**
+   * :: Experimental ::
+   * Returns a sampled version of the underlying dataset.
+   */
+  @Experimental
+  def sample(
+      withReplacement: Boolean = true,
+      fraction: Double,
+      seed: Long) =
+    new SchemaDStream(qlConnector, Sample(fraction, withReplacement, seed, baseLogicalPlan))
+
+  /**
+   * :: Experimental ::
+   * Applies the given Generator, or table generating function, to this relation.
+   */
+  @Experimental
+  def generate(
+      generator: Generator,
+      join: Boolean = false,
+      outer: Boolean = false,
+      alias: Option[String] = None) =
+    new SchemaDStream(qlConnector, Generate(generator, join, outer, alias, baseLogicalPlan))
 }

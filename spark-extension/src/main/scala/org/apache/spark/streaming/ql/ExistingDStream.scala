@@ -27,7 +27,6 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
 /** A LogicalPlan wrapper of row based DStream. */
-private[streaming]
 case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
   extends LogicalPlan with MultiInstanceRelation {
   def children = Nil
@@ -62,7 +61,6 @@ private[streaming] object StreamStrategy extends Strategy {
 }
 
 private[streaming] object PhysicalDStream {
-  //TODO. Make this variable as thread local variable
   var validTime: Time = null
 
   def setValidTime(time: Time): Unit = {

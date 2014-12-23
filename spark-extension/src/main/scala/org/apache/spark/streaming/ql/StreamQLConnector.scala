@@ -17,8 +17,6 @@
 
 package org.apache.spark.streaming.ql
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
-
 import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.Logging
@@ -26,6 +24,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.{Row, SQLContext, StructType}
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.{Catalog, Analyzer}
+import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
@@ -39,18 +38,20 @@ import org.apache.spark.streaming.dstream.DStream
 class StreamQLConnector(
     val streamContext: StreamingContext,
     val qlContext: SQLContext)
-  extends Logging with ExpressionConversions {
+  extends Logging
+  with ExpressionConversions
+  with UDFRegistrationWrapper {
 
   // Get several internal fields of SQLContext to better control the flow.
-  private lazy val analyzer =
+  protected lazy val analyzer =
     invoke(qlContext.getClass, qlContext, "analyzer").asInstanceOf[Analyzer]
-  private lazy val catalog =
+  protected lazy val catalog =
     invoke(qlContext.getClass, qlContext, "catalog").asInstanceOf[Catalog]
 
   // Add stream specific strategy to the planner.
   qlContext.extraStrategies = StreamStrategy :: Nil
 
-  protected[ql] def analyzePlan(plan: LogicalPlan): LogicalPlan = analyzer(plan)
+  def analyzePlan(plan: LogicalPlan): LogicalPlan = analyzer(plan)
 
   /**
    * Create a SchemaDStream from a normal DStream of case classes.
@@ -66,6 +67,15 @@ class StreamQLConnector(
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
     new SchemaDStream(this, LogicalDStream(attributes, rowStream))
   }
+
+  /**
+   * :: DeveloperApi ::
+   * Allows catalyst LogicalPlans to be executed as a SchemaDStream. Not this logical plan should
+   * be streaming meaningful.
+   */
+  @DeveloperApi
+  implicit def logicalPlanToStreamQuery(plan: LogicalPlan): SchemaDStream =
+    new SchemaDStream(this, plan)
 
   /**
    * :: DeveloperApi ::

@@ -34,8 +34,7 @@ trait StreamRelationMixin {
 
   protected lazy val baseRelationConverter = new RuleExecutor[LogicalPlan] {
     lazy val batches: Seq[Batch] =
-      Batch("BaseRelation Converter", FixedPoint(100), BaseRelationToLogicalDStream)::
-      Nil
+      Batch("BaseRelation Converter", FixedPoint(100), BaseRelationToLogicalDStream) :: Nil
 
     object BaseRelationToLogicalDStream extends Rule[LogicalPlan] {
       def apply(plan: LogicalPlan): LogicalPlan = plan transform {

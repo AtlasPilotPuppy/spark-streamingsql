@@ -27,91 +27,91 @@ private[ql] trait UDFRegistrationWrapper {
 
   // scalastyle:off
   def registerFunction[T: TypeTag](name: String, func: Function1[_, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function2[_, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function3[_, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function4[_, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function5[_, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function6[_, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function7[_, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function8[_, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function9[_, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function10[_, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function11[_, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function12[_, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function13[_, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function14[_, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function15[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function16[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function17[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function18[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function19[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function20[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function21[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
 
   def registerFunction[T: TypeTag](name: String, func: Function22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, T]): Unit = {
-    self.registerFunction(name, func)
+    self.qlContext.registerFunction(name, func)
   }
   // scalastyle:on
 }

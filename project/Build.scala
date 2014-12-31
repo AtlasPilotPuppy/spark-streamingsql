@@ -30,38 +30,12 @@ object StreamSQLBuild extends Build {
 
   import Dependencies._
 
-  lazy val sparkExtension = Project(id = "spark-extension", base = file("spark-extension"),
-    settings = commonSettings ++ Seq(
-      description := "Spark extensions to support StreamSQL",
-      libraryDependencies ++= sparkDeps ++ testDeps
-    )
-  )
-
-  lazy val core = Project(id = "core", base = file("core"),
-    settings = commonSettings ++ Seq(
-        description := "Spark StreamSQL core module",
-        libraryDependencies ++= sparkDeps ++ testDeps
-      )
-  ) dependsOn(sparkExtension)
-
-  lazy val example = Project(id = "example", base = file("example"),
-    settings  = commonSettings ++ Seq(
-      description := "Spark StreamSQL example module",
-      libraryDependencies ++= sparkDeps
-    )
-  ) dependsOn(core)
-
-  lazy val tool = Project(id = "tool", base = file("tool"),
-    settings = commonSettings ++ Seq(
-      description := "Spark StreamSQL tools module",
-      libraryDependencies ++= sparkDeps
-    )
-  ) dependsOn(core)
-
   lazy val root = Project(id = "spark-streamsql", base = file("."),
     settings = commonSettings ++ Seq(
+      description := "Spark streamsql extension",
+      libraryDependencies ++= sparkDeps ++ testDeps,
       parallelExecution in Test := false)
-  ) aggregate (core, sparkExtension, example, tool)
+  )
 
   lazy val runScalaStyle = taskKey[Unit]("testScalaStyle")
 
@@ -71,7 +45,7 @@ object StreamSQLBuild extends Build {
     "bin/run-rat.sh" !
   }
 
-  lazy val commonSettings = Defaults.defaultSettings ++ Seq(
+  lazy val commonSettings = Seq(
     organization := "spark.streamsql",
     version      := "0.1.0-SNAPSHOT",
     crossPaths   := false,
@@ -86,8 +60,10 @@ object StreamSQLBuild extends Build {
 
     (compile in Compile) <<= (compile in Compile) dependsOn runScalaStyle,
 
-    scalacOptions := Seq("-deprecation", "-feature",
-                         "-language:implicitConversions", "-language:postfixOps"),
+    scalacOptions := Seq("-deprecation",
+      "-feature",
+      "-language:implicitConversions",
+      "-language:postfixOps"),
     resolvers ++= Dependencies.repos,
     parallelExecution in Test := false
   ) ++ scalariformPrefs ++ ScalastylePlugin.Settings

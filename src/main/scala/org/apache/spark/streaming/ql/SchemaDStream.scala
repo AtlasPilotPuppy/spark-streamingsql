@@ -222,4 +222,11 @@ class SchemaDStream(
       outer: Boolean = false,
       alias: Option[String] = None) =
     new SchemaDStream(qlConnector, Generate(generator, join, outer, alias, baseLogicalPlan))
+
+  /**
+   * Register itself as a temporary stream table.
+   */
+  def registerAsTable(tableName: String): Unit = {
+    qlConnector.registerDStreamAsTable(this, tableName)
+  }
 }

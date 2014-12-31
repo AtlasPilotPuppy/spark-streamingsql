@@ -23,7 +23,7 @@ import org.apache.spark.streaming.{Duration, StreamingContext}
 
 import spark.streamsql.StreamQLContext
 
-object WordCountQuery {
+object UdfEnabledQuery {
   case class SingleWord(word: String)
 
   def main(args: Array[String]): Unit = {
@@ -36,7 +36,17 @@ object WordCountQuery {
     val dummyRDD = sc.parallelize(1 to 100).map(i => SingleWord(s"$i"))
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
     streamQlContext.registerDStreamAsTable(dummyStream, "test")
-    streamQlContext.sql("SELECT word, COUNT(*) FROM test GROUP BY word")
+
+    streamQlContext.registerFunction("IsEven", (word: String) => {
+      val number = word.toInt
+      if (number % 2 == 0) {
+        "even number"
+      } else {
+        "odd number"
+      }
+    })
+
+    streamQlContext.sql("SELECT IsEven(word) FROM test")
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()

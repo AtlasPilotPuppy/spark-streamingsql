@@ -58,7 +58,7 @@ object StreamSQLBuild extends Build {
     )
   ) dependsOn(core)
 
-  lazy val root = Project(id = "root", base = file("."),
+  lazy val root = Project(id = "spark-streamsql", base = file("."),
     settings = commonSettings ++ Seq(
       parallelExecution in Test := false)
   ) aggregate (core, sparkExtension, example, tool)
@@ -77,6 +77,8 @@ object StreamSQLBuild extends Build {
     crossPaths   := false,
     scalaVersion := "2.10.4",
     scalaBinaryVersion := "2.10",
+    retrieveManaged := true,
+    retrievePattern := "[type]s/[artifact](-[revision])(-[classifier]).[ext]",
 
     runScalaStyle := {
       org.scalastyle.sbt.PluginKeys.scalastyle.toTask("").value

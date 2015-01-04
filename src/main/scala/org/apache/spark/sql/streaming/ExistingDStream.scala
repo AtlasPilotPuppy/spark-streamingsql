@@ -15,24 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.ql
+package org.apache.spark.sql.streaming
 
-import org.apache.spark.rdd.EmptyRDD
-import org.apache.spark.sql.{Strategy, Row}
+import org.apache.spark.rdd.{RDD, EmptyRDD}
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Statistics, LogicalPlan}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.{Row, Strategy}
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
+import spark.streamsql.Utils
+
 /** A LogicalPlan wrapper of row based DStream. */
 case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
+    (qlConnector: StreamQLConnector)
   extends LogicalPlan with MultiInstanceRelation {
   def children = Nil
 
   def newInstance() =
-    LogicalDStream(output.map(_.newInstance()), stream).asInstanceOf[this.type]
+    LogicalDStream(output.map(_.newInstance()), stream)(qlConnector).asInstanceOf[this.type]
+
+  @transient override lazy val statistics = Statistics(
+    sizeInBytes = BigInt(qlConnector.qlContext.defaultSizeInBytes)
+  )
 }
 
 /**
@@ -48,7 +55,9 @@ case class PhysicalDStream(output: Seq[Attribute], @transient stream: DStream[Ro
 
   override def execute() = {
     assert(validTime != null)
-    stream.getOrCompute(validTime).getOrElse(new EmptyRDD[Row](sparkContext))
+    Utils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
+      .asInstanceOf[Option[RDD[Row]]]
+      .getOrElse(new EmptyRDD[Row](sparkContext))
   }
 }
 
@@ -71,4 +80,5 @@ private[streaming] object PhysicalDStream {
     } else {
     }
   }
+
 }

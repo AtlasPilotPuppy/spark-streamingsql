@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.ql
+package org.apache.spark.sql.streaming
 
 import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.Logging
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.sql.{Row, SQLContext, StructType}
 import org.apache.spark.sql.catalyst.ScalaReflection
-import org.apache.spark.sql.catalyst.analysis.{Catalog, Analyzer}
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
+import org.apache.spark.sql.{Row, SQLContext, StructType}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -43,10 +41,8 @@ class StreamQLConnector(
   with UDFRegistrationWrapper {
 
   // Get several internal fields of SQLContext to better control the flow.
-  protected lazy val analyzer =
-    invoke(qlContext.getClass, qlContext, "analyzer").asInstanceOf[Analyzer]
-  protected lazy val catalog =
-    invoke(qlContext.getClass, qlContext, "catalog").asInstanceOf[Catalog]
+  protected lazy val analyzer = qlContext.analyzer
+  protected lazy val catalog = qlContext.catalog
 
   // Add stream specific strategy to the planner.
   qlContext.extraStrategies = StreamStrategy :: Nil
@@ -57,15 +53,11 @@ class StreamQLConnector(
    * Create a SchemaDStream from a normal DStream of case classes.
    */
   implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
-    val context = invoke(SparkPlan.getClass, SparkPlan,"currentContext")
-      .asInstanceOf[ThreadLocal[SQLContext]]
-    context.set(qlContext)
+    SparkPlan.currentContext.set(qlContext)
     val attributes = ScalaReflection.attributesFor[A]
-    val schema = invoke(
-      StructType.getClass, StructType, "fromAttributes", (classOf[Seq[Attribute]], attributes))
-        .asInstanceOf[StructType]
+    val schema = StructType.fromAttributes(attributes)
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
-    new SchemaDStream(this, LogicalDStream(attributes, rowStream))
+    new SchemaDStream(this, LogicalDStream(attributes, rowStream)(this))
   }
 
   /**
@@ -84,9 +76,8 @@ class StreamQLConnector(
    */
   @DeveloperApi
   def applySchema(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
-    val attributes = invoke(StructType.getClass, schema, "toAttributes")
-      .asInstanceOf[Seq[Attribute]]
-    val logicalPlan = LogicalDStream(attributes, rowStream)
+    val attributes = schema.toAttributes
+    val logicalPlan = LogicalDStream(attributes, rowStream)(this)
     new SchemaDStream(this, logicalPlan)
   }
 
@@ -126,16 +117,5 @@ class StreamQLConnector(
    */
   def command(sqlText: String): String = {
     qlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
-  }
-
-  private def invoke(
-      clazz: Class[_],
-      obj: AnyRef,
-      methodName: String,
-      args: (Class[_], AnyRef)*): AnyRef = {
-    val (types, values) = args.unzip
-    val method = clazz.getDeclaredMethod(methodName, types: _*)
-    method.setAccessible(true)
-    method.invoke(obj, values.toSeq: _*)
   }
 }

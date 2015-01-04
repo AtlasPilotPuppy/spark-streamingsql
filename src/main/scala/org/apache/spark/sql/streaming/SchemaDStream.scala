@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.ql
+package org.apache.spark.sql.streaming
 
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{BooleanType, Row, StructType, SchemaRDD}
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.{BooleanType, Row, SchemaRDD, StructType}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.plans.{Inner, JoinType}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.plans.{Inner, JoinType}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
 

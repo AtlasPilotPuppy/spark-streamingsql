@@ -17,11 +17,10 @@
 
 package spark.streamsql
 
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.{SchemaRDD, SQLContext}
-import org.apache.spark.sql.streaming.{StreamRelationMixin, StreamDDLParser}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.streaming.{StreamQLConnector, StreamRelationMixin, StreamDDLParser}
 import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.streaming.ql.StreamQLConnector
 
 /**
  * The entry point of stream query engine.

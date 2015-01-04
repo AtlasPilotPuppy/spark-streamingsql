@@ -22,7 +22,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.{RuleExecutor, Rule}
 import org.apache.spark.sql.sources.{LogicalRelation, BaseRelation}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.ql.{LogicalDStream, SchemaDStream, StreamQLConnector}
 
 /** Mix the stream relation creation function into StreamQLConnector. */
 trait StreamRelationMixin {
@@ -39,7 +38,7 @@ trait StreamRelationMixin {
     object BaseRelationToLogicalDStream extends Rule[LogicalPlan] {
       def apply(plan: LogicalPlan): LogicalPlan = plan transform {
         case l @ LogicalRelation(s: StreamTableScan) =>
-          LogicalDStream(l.output, s.buildScan())
+          LogicalDStream(l.output, s.buildScan())(self)
       }
     }
   }

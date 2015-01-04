@@ -21,7 +21,6 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.RunnableCommand
 import org.apache.spark.sql.sources.DDLParser
-import org.apache.spark.streaming.ql.StreamQLConnector
 import org.apache.spark.util.Utils
 
 class StreamDDLParser(

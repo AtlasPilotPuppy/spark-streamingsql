@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.spark.streaming.ql
+package org.apache.spark.sql.streaming
 
 import scala.reflect.runtime.universe.TypeTag
 
 /**
  * UDF function registration wrapper
  */
-private[ql] trait UDFRegistrationWrapper {
+private[streaming] trait UDFRegistrationWrapper {
   self: StreamQLConnector =>
 
   // scalastyle:off

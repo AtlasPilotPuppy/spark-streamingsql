@@ -38,7 +38,8 @@ import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
  * 1. time-based window over subquery is not supported yet.
  * 2. WINDOW alias like SELECT ... FROM table OVER w ... WINDOW w (WINDOW "6" SECONDS,
  * ...) is not supported yet.
- * 3. for windowed join, two streamized table need to have same window constraint.
+ * 3. for windowed join, two streamized table need to have same window constraint,
+ * it is the constraint of Spark Streaming.
  * 4. Mix time-based window and row-based window is not supported yet.
  */
 class StreamQLParser extends SqlParser {

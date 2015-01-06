@@ -35,13 +35,13 @@ object StreamToStreamJoin {
 
     val userRDD1 = sc.parallelize(1 to 100).map(i => User(i / 2, s"$i"))
     val userStream1 = new ConstantInputDStream[User](ssc, userRDD1)
-    streamQlContext.registerDStreamAsTable(userStream1, "user1")
+    registerDStreamAsTable(userStream1, "user1")
 
     val userRDD2 = sc.parallelize(1 to 100).map(i => User(i / 5, s"$i"))
     val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
-    streamQlContext.registerDStreamAsTable(userStream2, "user2")
+    registerDStreamAsTable(userStream2, "user2")
 
-    streamQlContext.sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id")
+    sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id")
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()

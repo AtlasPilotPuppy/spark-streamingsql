@@ -39,9 +39,9 @@ object StreamToStreamWindowJoin {
 
     val userRDD2 = sc.parallelize(1 to 10).map(i => User(i / 5, s"$i"))
     val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
-    streamQlContext.registerDStreamAsTable(userStream2, "user2")
+    registerDStreamAsTable(userStream2, "user2")
 
-    streamQlContext.sql(
+    sql(
       """
         |SELECT * FROM
         |user1 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS u

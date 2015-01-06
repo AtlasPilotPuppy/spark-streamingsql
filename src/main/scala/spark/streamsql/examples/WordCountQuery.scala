@@ -35,8 +35,8 @@ object WordCountQuery {
 
     val dummyRDD = sc.parallelize(1 to 10).map(i => SingleWord(s"$i"))
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
-    streamQlContext.registerDStreamAsTable(dummyStream, "test")
-    streamQlContext.sql(
+    registerDStreamAsTable(dummyStream, "test")
+    sql(
       """
         |SELECT word, COUNT(*)
         |FROM test OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS)

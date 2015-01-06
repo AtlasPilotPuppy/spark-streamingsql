@@ -43,11 +43,19 @@ class StreamQLConnector(
   // Get several internal fields of SQLContext to better control the flow.
   protected lazy val analyzer = qlContext.analyzer
   protected lazy val catalog = qlContext.catalog
+  protected lazy val optimizer = qlContext.optimizer
+
+  // Query parser for streaming specific semantics.
+  protected lazy val streamQLParser = new StreamQLParser
 
   // Add stream specific strategy to the planner.
   qlContext.extraStrategies = StreamStrategy :: Nil
 
-  def analyzePlan(plan: LogicalPlan): LogicalPlan = analyzer(plan)
+  def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
+    val analyzed = analyzer(plan)
+    val optimized = WindowOptimizer(optimizer(analyzed))
+    optimized
+  }
 
   /**
    * Create a SchemaDStream from a normal DStream of case classes.
@@ -108,7 +116,8 @@ class StreamQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
-    new SchemaDStream(this, qlContext.sql(sqlText).baseLogicalPlan)
+    val plan = streamQLParser.parse(sqlText).getOrElse(qlContext.parseSql(sqlText))
+    new SchemaDStream(this, plan)
   }
 
   /**

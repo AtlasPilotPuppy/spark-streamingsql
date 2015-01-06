@@ -30,7 +30,7 @@ import spark.streamsql.Utils
 
 /** A LogicalPlan wrapper of row based DStream. */
 case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
-    (qlConnector: StreamQLConnector)
+    (val qlConnector: StreamQLConnector)
   extends LogicalPlan with MultiInstanceRelation {
   def children = Nil
 

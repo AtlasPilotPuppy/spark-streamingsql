@@ -55,7 +55,7 @@ class SchemaDStream(
     // duration
     PhysicalDStream.setValidTime(validTime)
     // Scan the streaming logic plan to convert streaming plan to specific RDD logic plan.
-    Some(new SchemaRDD(qlConnector.qlContext, preAnalyzedPlan))
+    Some(new SchemaRDD(qlConnector.qlContext, preOptimizedPlan))
   }
 
   // To guard out some unsupported logical plans.
@@ -65,11 +65,11 @@ class SchemaDStream(
     case _ => Unit
   }
 
-  private lazy val preAnalyzedPlan = qlConnector.analyzePlan(baseLogicalPlan)
+  private lazy val preOptimizedPlan = qlConnector.preOptimizePlan(baseLogicalPlan)
 
   private lazy val physicalStream = {
     val tmp = ArrayBuffer[DStream[Row]]()
-    preAnalyzedPlan.foreach(_ match {
+    preOptimizedPlan.foreach(_ match {
         case LogicalDStream(_, stream) => tmp += stream
         case _ => Unit
       }
@@ -80,7 +80,7 @@ class SchemaDStream(
   /**
    * Returns the schema of this SchemaDStream (represented by a [[StructType]]]).
    */
-  lazy val schema: StructType = preAnalyzedPlan.schema
+  lazy val schema: StructType = preOptimizedPlan.schema
 
   // Streaming DSL query
 

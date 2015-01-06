@@ -19,11 +19,13 @@ package spark.streamsql
 
 import org.apache.spark.sql.{SchemaRDD, SQLContext}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.streaming.{StreamQLConnector, StreamRelationMixin, StreamDDLParser}
+import org.apache.spark.sql.streaming._
 import org.apache.spark.streaming.StreamingContext
 
 /**
  * The entry point of stream query engine.
+ * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
+ * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
 class StreamQLContext(
     streamContext: StreamingContext,
@@ -33,8 +35,10 @@ class StreamQLContext(
 
   private lazy val ddlParser = new StreamDDLParser(this)
 
-  override def analyzePlan(plan: LogicalPlan): LogicalPlan = {
-    analyzer(baseRelationConverter(plan))
+  override def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
+    val analyzed = analyzer(baseRelationConverter(plan))
+    val optimized = WindowOptimizer(optimizer(analyzed))
+    optimized
   }
 
   /**

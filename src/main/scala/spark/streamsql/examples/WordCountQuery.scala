@@ -18,8 +18,8 @@
 package spark.streamsql.examples
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.streaming.dstream.ConstantInputDStream
 import org.apache.spark.streaming.{Duration, StreamingContext}
+import org.apache.spark.streaming.dstream.ConstantInputDStream
 
 import spark.streamsql.StreamQLContext
 
@@ -33,14 +33,19 @@ object WordCountQuery {
     val streamQlContext = new StreamQLContext(ssc, new SQLContext(sc))
     import streamQlContext._
 
-    val dummyRDD = sc.parallelize(1 to 100).map(i => SingleWord(s"$i"))
+    val dummyRDD = sc.parallelize(1 to 10).map(i => SingleWord(s"$i"))
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
     streamQlContext.registerDStreamAsTable(dummyStream, "test")
-    streamQlContext.sql("SELECT word, COUNT(*) FROM test GROUP BY word")
+    streamQlContext.sql(
+      """
+        |SELECT word, COUNT(*)
+        |FROM test OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS)
+        |GROUP BY word
+      """.stripMargin)
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTermination(30 * 1000)
+    ssc.awaitTermination(18 * 1000)
     ssc.stop()
   }
 }

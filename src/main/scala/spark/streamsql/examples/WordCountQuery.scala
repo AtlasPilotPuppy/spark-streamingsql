@@ -38,7 +38,7 @@ object WordCountQuery {
     registerDStreamAsTable(dummyStream, "test")
     sql(
       """
-        |SELECT word, COUNT(*)
+        |SELECT word, COUNT(word)
         |FROM test OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS)
         |GROUP BY word
       """.stripMargin)

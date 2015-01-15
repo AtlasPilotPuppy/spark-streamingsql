@@ -20,12 +20,13 @@ package org.apache.spark.sql.streaming
 import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.Logging
-import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.annotation.{Experimental, DeveloperApi}
+import org.apache.spark.sql.{Row, SQLContext, StructType}
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
-import org.apache.spark.sql.{Row, SQLContext, StructType}
+import org.apache.spark.sql.json.JsonRDD
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -126,5 +127,42 @@ class StreamQLConnector(
    */
   def command(sqlText: String): String = {
     qlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
+  }
+
+  /**
+   * :: Experimental ::
+   * Infer the schema from the existing JSON file
+   */
+  @Experimental
+  def inferJsonSchema(path: String, samplingRatio: Double = 1.0): StructType = {
+    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
+    val jsonRdd = streamContext.sparkContext.textFile(path)
+    JsonRDD.nullTypeToStringType(
+      JsonRDD.inferSchema(jsonRdd, samplingRatio, colNameOfCorruptedJsonRecord))
+  }
+
+  /**
+   * :: Experimental ::
+   * Get a SchemaDStream with schema support from a raw DStream of String,
+   * in which each string is a json record.
+   */
+  @Experimental
+  def jsonDStream(json: DStream[String], schema: StructType): SchemaDStream = {
+    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
+    val rowDStream = json.transform { r =>
+      JsonRDD.jsonStringToRow(r, schema, colNameOfCorruptedJsonRecord)
+    }
+    applySchema(rowDStream, schema)
+  }
+
+  /**
+   * :: Experimental ::
+   * Infer schema from existing json file with `path` and `samplingRatio`. Get the parsed
+   * row DStream with schema support from input json string DStream.
+   */
+  @Experimental
+  def jsonDStream(json: DStream[String], path: String, samplingRatio: Double = 1.0)
+    : SchemaDStream = {
+    jsonDStream(json, inferJsonSchema(path, samplingRatio))
   }
 }

@@ -38,7 +38,7 @@ case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
     LogicalDStream(output.map(_.newInstance()), stream)(qlConnector).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(qlConnector.qlContext.defaultSizeInBytes)
+    sizeInBytes = BigInt(qlConnector.qlContext.conf.defaultSizeInBytes)
   )
 }
 

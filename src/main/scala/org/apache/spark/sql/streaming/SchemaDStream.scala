@@ -21,7 +21,8 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{BooleanType, Row, SchemaRDD, StructType}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{BooleanType, StructType}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -55,7 +56,8 @@ class SchemaDStream(
     // duration
     PhysicalDStream.setValidTime(validTime)
     // Scan the streaming logic plan to convert streaming plan to specific RDD logic plan.
-    Some(new SchemaRDD(qlConnector.qlContext, preOptimizedPlan))
+    val df = new DataFrame(qlConnector.qlContext, preOptimizedPlan)
+    Some(df.queryExecution.toRdd)
   }
 
   // To guard out some unsupported logical plans.
@@ -116,7 +118,7 @@ class SchemaDStream(
   /**
    * Performs a relational join between SchemaDStream and SchemaRDD
    */
-  def tableJoin(otherPlan: SchemaRDD,
+  def tableJoin(otherPlan: DataFrame,
                 joinType: JoinType = Inner,
                 on: Option[Expression] = None): SchemaDStream = {
     new SchemaDStream(qlConnector,
@@ -127,7 +129,7 @@ class SchemaDStream(
    * Sorts the results by the given expressions.
    */
   def orderBy(sortExprs: SortOrder*): SchemaDStream =
-    new SchemaDStream(qlConnector, Sort(sortExprs, baseLogicalPlan))
+    new SchemaDStream(qlConnector, Sort(sortExprs, global = true, baseLogicalPlan))
 
   /**
    * Limits the results by the given integers.
@@ -185,20 +187,6 @@ class SchemaDStream(
     new SchemaDStream(
       qlConnector,
       Filter(ScalaUdf(udf, BooleanType, Seq(UnresolvedAttribute(arg1.name))), baseLogicalPlan))
-
-  /**
-   * :: Experimental ::
-   * Filters tuples using a function over a `Dynamic` version of a given Row.  DynamicRows use
-   * scala's Dynamic trait to emulate an ORM of in a dynamically typed language.  Since the type of
-   * the column is not known at compile time, all attributes are converted to strings before
-   * being passed to the function.
-   */
-  @Experimental
-  def where(dynamicUdf: (DynamicRow) => Boolean) =
-    new SchemaDStream(
-      qlConnector,
-      Filter(ScalaUdf(
-        dynamicUdf, BooleanType, Seq(WrapDynamic(baseLogicalPlan.output))), baseLogicalPlan))
 
   /**
    * :: Experimental ::

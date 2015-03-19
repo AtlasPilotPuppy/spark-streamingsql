@@ -24,8 +24,9 @@ import org.apache.spark.sql.sources.DDLParser
 import org.apache.spark.util.Utils
 
 class StreamDDLParser(
-    streamQlConnector: StreamQLConnector with StreamRelationMixin)
-  extends DDLParser {
+    streamQlConnector: StreamQLConnector with StreamRelationMixin,
+    parseQuery: String => LogicalPlan)
+  extends DDLParser(parseQuery) {
 
   protected def STREAM = Keyword("STREAM")
 

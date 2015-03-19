@@ -37,7 +37,7 @@ object UdfEnabledQuery {
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
     registerDStreamAsTable(dummyStream, "test")
 
-    registerFunction("IsEven", (word: String) => {
+    streamQlContext.udf.register("IsEven", (word: String) => {
       val number = word.toInt
       if (number % 2 == 0) {
         "even number"
@@ -49,7 +49,7 @@ object UdfEnabledQuery {
     sql("SELECT IsEven(word) FROM test").foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTermination(30 * 1000)
+    ssc.awaitTerminationOrTimeout(30 * 1000)
     ssc.stop()
   }
 }

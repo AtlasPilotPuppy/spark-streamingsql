@@ -23,7 +23,7 @@ import org.scalastyle.sbt.ScalastylePlugin
 import scalariform.formatter.preferences._
 
 object Properties {
-  val SPARK_VERSION = "1.3.0-SNAPSHOT"
+  val SPARK_VERSION = "1.3.0"
 }
 
 object StreamSQLBuild extends Build {

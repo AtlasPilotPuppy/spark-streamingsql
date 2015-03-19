@@ -21,12 +21,13 @@ import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.Logging
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
-import org.apache.spark.sql.{Row, SQLContext, StructType}
+import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.json.JsonRDD
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -38,8 +39,7 @@ class StreamQLConnector(
     val streamContext: StreamingContext,
     val qlContext: SQLContext)
   extends Logging
-  with ExpressionConversions
-  with UDFRegistrationWrapper {
+  with ExpressionConversions {
 
   // Get several internal fields of SQLContext to better control the flow.
   protected lazy val analyzer = qlContext.analyzer
@@ -50,7 +50,9 @@ class StreamQLConnector(
   protected lazy val streamQLParser = new StreamQLParser
 
   // Add stream specific strategy to the planner.
-  qlContext.extraStrategies = StreamStrategy :: Nil
+  qlContext.experimental.extraStrategies = StreamStrategy :: Nil
+
+  val udf = qlContext.udf
 
   def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(plan)
@@ -63,10 +65,10 @@ class StreamQLConnector(
    */
   implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
     SparkPlan.currentContext.set(qlContext)
-    val attributes = ScalaReflection.attributesFor[A]
-    val schema = StructType.fromAttributes(attributes)
+    val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
-    new SchemaDStream(this, LogicalDStream(attributes, rowStream)(this))
+    new SchemaDStream(this, LogicalDStream(attributeSeq, rowStream)(this))
   }
 
   /**
@@ -95,21 +97,21 @@ class StreamQLConnector(
    * lifetime of this instance of ql context.
    */
   def registerDStreamAsTable(stream: SchemaDStream, tableName: String): Unit = {
-    catalog.registerTable(None, tableName, stream.baseLogicalPlan)
+    catalog.registerTable(Seq(tableName), stream.baseLogicalPlan)
   }
 
   /**
    * Drop the temporary stream table with given table name in the catalog.
    */
   def dropTable(tableName: String): Unit = {
-    catalog.unregisterTable(None, tableName)
+    catalog.unregisterTable(Seq(tableName))
   }
 
   /**
    * Returns the specified stream table as a SchemaDStream
    */
   def table(tableName: String): SchemaDStream = {
-    new SchemaDStream(this, catalog.lookupRelation(None, tableName))
+    new SchemaDStream(this, catalog.lookupRelation(Seq(tableName)))
   }
 
   /**
@@ -135,7 +137,7 @@ class StreamQLConnector(
    */
   @Experimental
   def inferJsonSchema(path: String, samplingRatio: Double = 1.0): StructType = {
-    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
+    val colNameOfCorruptedJsonRecord = qlContext.conf.columnNameOfCorruptRecord
     val jsonRdd = streamContext.sparkContext.textFile(path)
     JsonRDD.nullTypeToStringType(
       JsonRDD.inferSchema(jsonRdd, samplingRatio, colNameOfCorruptedJsonRecord))
@@ -148,7 +150,7 @@ class StreamQLConnector(
    */
   @Experimental
   def jsonDStream(json: DStream[String], schema: StructType): SchemaDStream = {
-    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
+    val colNameOfCorruptedJsonRecord = qlContext.conf.columnNameOfCorruptRecord
     val rowDStream = json.transform { r =>
       JsonRDD.jsonStringToRow(r, schema, colNameOfCorruptedJsonRecord)
     }

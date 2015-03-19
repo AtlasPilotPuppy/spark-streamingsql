@@ -78,8 +78,8 @@ class StreamQLParser extends SqlParser {
           WindowedLogicalPlan(
             w._1,
             w._2,
-            UnresolvedRelation(None, tableName, alias))
-        }.getOrElse(UnresolvedRelation(None, tableName, alias))
+            UnresolvedRelation(Seq(tableName), alias))
+        }.getOrElse(UnresolvedRelation(Seq(tableName), alias))
       }
     | ("(" ~> start <~ ")") ~ (AS.? ~> ident) ^^ { case s ~ a => Subquery(a, s) }
     )

@@ -33,7 +33,7 @@ class StreamQLContext(
   extends StreamQLConnector(streamContext, qlContext)
   with StreamRelationMixin {
 
-  private lazy val ddlParser = new StreamDDLParser(this)
+  //private lazy val ddlParser = new StreamDDLParser(this)
 
   override def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(baseRelationConverter(plan))
@@ -45,6 +45,7 @@ class StreamQLContext(
    * Execute a command or DDL query and directly get the result. The query will be parsed to
    * stream DDL at first, if failed it will fall back to parser in SQLContext.
    */
+  /*
   override def command(sqlText: String): String = {
     ddlParser(sqlText).map { plan =>
       new SchemaRDD(qlContext, plan)
@@ -52,5 +53,6 @@ class StreamQLContext(
       qlContext.sql(sqlText)
     }.collect().map(_.toString()).mkString("\n")
   }
+  */
 }
 

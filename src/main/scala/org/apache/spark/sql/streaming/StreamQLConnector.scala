@@ -52,6 +52,7 @@ class StreamQLConnector(
   // Add stream specific strategy to the planner.
   qlContext.experimental.extraStrategies = StreamStrategy :: Nil
 
+  /** udf interface for user to register udf through it */
   val udf = qlContext.udf
 
   def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
@@ -119,7 +120,7 @@ class StreamQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
-    val plan = streamQLParser.parse(sqlText).getOrElse(qlContext.parseSql(sqlText))
+    val plan = streamQLParser(sqlText, false).getOrElse(qlContext.parseSql(sqlText))
     new SchemaDStream(this, plan)
   }
 

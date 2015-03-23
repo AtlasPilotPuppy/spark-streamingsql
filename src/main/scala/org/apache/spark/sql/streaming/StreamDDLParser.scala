@@ -24,8 +24,9 @@ import org.apache.spark.sql.sources.DDLParser
 import org.apache.spark.util.Utils
 
 class StreamDDLParser(
-    streamQlConnector: StreamQLConnector with StreamRelationMixin)
-  extends DDLParser {
+    streamSqlConnector: StreamSQLConnector with StreamRelationMixin,
+    parseQuery: String => LogicalPlan)
+  extends DDLParser(parseQuery) {
 
   protected def STREAM = Keyword("STREAM")
 
@@ -34,7 +35,7 @@ class StreamDDLParser(
   protected lazy val createStreamTable: Parser[LogicalPlan] =
     CREATE ~ TEMPORARY ~ STREAM ~ TABLE ~> ident ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
       case streamName ~ provider ~ opts =>
-        CreateStreamTableUsing(streamName, provider, opts, streamQlConnector)
+        CreateStreamTableUsing(streamName, provider, opts, streamSqlConnector)
     }
 }
 
@@ -42,7 +43,7 @@ case class CreateStreamTableUsing(
     streamTableName: String,
     provider: String,
     options: Map[String, String],
-    streamQlConnector: StreamQLConnector with StreamRelationMixin)
+    streamSqlConnector: StreamSQLConnector with StreamRelationMixin)
   extends RunnableCommand {
 
   def run(sqlContext: SQLContext) = {
@@ -56,10 +57,10 @@ case class CreateStreamTableUsing(
     }
 
     val dataSource = clazz.newInstance().asInstanceOf[StreamRelationProvider]
-    val relation = dataSource.createRelation(streamQlConnector, options)
+    val relation = dataSource.createRelation(streamSqlConnector, options)
 
-    val plan = streamQlConnector.baseRelationToSchemaDStream(relation)
-    streamQlConnector.registerDStreamAsTable(plan, streamTableName)
+    val plan = streamSqlConnector.baseRelationToSchemaDStream(relation)
+    streamSqlConnector.registerDStreamAsTable(plan, streamTableName)
     Seq.empty
   }
 }

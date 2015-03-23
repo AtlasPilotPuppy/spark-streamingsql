@@ -21,7 +21,8 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{BooleanType, Row, SchemaRDD, StructType}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{BooleanType, StructType}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -42,9 +43,9 @@ import org.apache.spark.streaming.{Duration, Time}
  */
 @Experimental
 class SchemaDStream(
-    val qlConnector: StreamQLConnector,
+    val sqlConnector: StreamSQLConnector,
     val baseLogicalPlan: LogicalPlan)
-  extends DStream[Row](qlConnector.streamContext) {
+  extends DStream[Row](sqlConnector.streamingContext) {
 
   override def dependencies = physicalStream.toList
 
@@ -55,7 +56,8 @@ class SchemaDStream(
     // duration
     PhysicalDStream.setValidTime(validTime)
     // Scan the streaming logic plan to convert streaming plan to specific RDD logic plan.
-    Some(new SchemaRDD(qlConnector.qlContext, preOptimizedPlan))
+    val qe = sqlConnector.sqlContext.executePlan(preOptimizedPlan)
+    Some(qe.toRdd)
   }
 
   // To guard out some unsupported logical plans.
@@ -65,7 +67,7 @@ class SchemaDStream(
     case _ => Unit
   }
 
-  private lazy val preOptimizedPlan = qlConnector.preOptimizePlan(baseLogicalPlan)
+  private lazy val preOptimizedPlan = sqlConnector.preOptimizePlan(baseLogicalPlan)
 
   private lazy val physicalStream = {
     val tmp = ArrayBuffer[DStream[Row]]()
@@ -93,14 +95,14 @@ class SchemaDStream(
       case (ne: NamedExpression, _) => ne
       case (e, i) => Alias(e, s"c$i")()
     }
-    new SchemaDStream(qlConnector, Project(aliases, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Project(aliases, baseLogicalPlan))
   }
 
   /**
    * Filters output, only returning those rows where `condition` evaluates to true.
    */
   def where(condition: Expression): SchemaDStream = {
-    new SchemaDStream(qlConnector, Filter(condition, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Filter(condition, baseLogicalPlan))
   }
 
   /**
@@ -109,17 +111,17 @@ class SchemaDStream(
   def join(otherPlan: SchemaDStream,
            joinType: JoinType = Inner,
            on: Option[Expression] = None): SchemaDStream = {
-    new SchemaDStream(qlConnector,
+    new SchemaDStream(sqlConnector,
       Join(baseLogicalPlan, otherPlan.baseLogicalPlan, joinType, on))
   }
 
   /**
    * Performs a relational join between SchemaDStream and SchemaRDD
    */
-  def tableJoin(otherPlan: SchemaRDD,
+  def tableJoin(otherPlan: DataFrame,
                 joinType: JoinType = Inner,
                 on: Option[Expression] = None): SchemaDStream = {
-    new SchemaDStream(qlConnector,
+    new SchemaDStream(sqlConnector,
       Join(baseLogicalPlan, otherPlan.logicalPlan, joinType, on))
   }
 
@@ -127,13 +129,13 @@ class SchemaDStream(
    * Sorts the results by the given expressions.
    */
   def orderBy(sortExprs: SortOrder*): SchemaDStream =
-    new SchemaDStream(qlConnector, Sort(sortExprs, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Sort(sortExprs, global = true, baseLogicalPlan))
 
   /**
    * Limits the results by the given integers.
    */
   def limit(limitNum: Int): SchemaDStream =
-    new SchemaDStream(qlConnector, Limit(Literal(limitNum), baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Limit(Literal(limitNum), baseLogicalPlan))
 
   /**
    * Performs a grouping followed by an aggregation.
@@ -143,7 +145,7 @@ class SchemaDStream(
       case ne: NamedExpression => ne
       case e => Alias(e, e.toString)()
     }
-    new SchemaDStream(qlConnector, Aggregate(groupingExprs, aliasedExprs, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Aggregate(groupingExprs, aliasedExprs, baseLogicalPlan))
   }
 
   /**
@@ -158,47 +160,33 @@ class SchemaDStream(
    * Applies a qualifier to the attributes of this relation.
    */
   def as(alias: Symbol) =
-    new SchemaDStream(qlConnector, Subquery(alias.name, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Subquery(alias.name, baseLogicalPlan))
 
   /**
    * Combines the tuples of two DStreams with the same schema, keeping duplicates.
    */
   def unionAll(otherPlan: SchemaDStream) =
-    new SchemaDStream(qlConnector, Union(baseLogicalPlan, otherPlan.baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Union(baseLogicalPlan, otherPlan.baseLogicalPlan))
 
   /**
    * Performs a relational except on two SchemaDStreams.
    */
   def except(otherPlan: SchemaDStream): SchemaDStream =
-    new SchemaDStream(qlConnector, Except(baseLogicalPlan, otherPlan.baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Except(baseLogicalPlan, otherPlan.baseLogicalPlan))
 
   /**
    * Performs a relational intersect on two SchemaDStreams
    */
   def intersect(otherPlan: SchemaDStream): SchemaDStream =
-    new SchemaDStream(qlConnector, Intersect(baseLogicalPlan, otherPlan.baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Intersect(baseLogicalPlan, otherPlan.baseLogicalPlan))
 
   /**
    * Filters tuples using a function over the value of the specified column.
    */
   def where[T1](arg1: Symbol)(udf: (T1) => Boolean) =
     new SchemaDStream(
-      qlConnector,
+      sqlConnector,
       Filter(ScalaUdf(udf, BooleanType, Seq(UnresolvedAttribute(arg1.name))), baseLogicalPlan))
-
-  /**
-   * :: Experimental ::
-   * Filters tuples using a function over a `Dynamic` version of a given Row.  DynamicRows use
-   * scala's Dynamic trait to emulate an ORM of in a dynamically typed language.  Since the type of
-   * the column is not known at compile time, all attributes are converted to strings before
-   * being passed to the function.
-   */
-  @Experimental
-  def where(dynamicUdf: (DynamicRow) => Boolean) =
-    new SchemaDStream(
-      qlConnector,
-      Filter(ScalaUdf(
-        dynamicUdf, BooleanType, Seq(WrapDynamic(baseLogicalPlan.output))), baseLogicalPlan))
 
   /**
    * :: Experimental ::
@@ -209,7 +197,7 @@ class SchemaDStream(
       withReplacement: Boolean = true,
       fraction: Double,
       seed: Long) =
-    new SchemaDStream(qlConnector, Sample(fraction, withReplacement, seed, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Sample(fraction, withReplacement, seed, baseLogicalPlan))
 
   /**
    * :: Experimental ::
@@ -221,12 +209,12 @@ class SchemaDStream(
       join: Boolean = false,
       outer: Boolean = false,
       alias: Option[String] = None) =
-    new SchemaDStream(qlConnector, Generate(generator, join, outer, alias, baseLogicalPlan))
+    new SchemaDStream(sqlConnector, Generate(generator, join, outer, alias, baseLogicalPlan))
 
   /**
    * Register itself as a temporary stream table.
    */
   def registerAsTable(tableName: String): Unit = {
-    qlConnector.registerDStreamAsTable(this, tableName)
+    sqlConnector.registerDStreamAsTable(this, tableName)
   }
 }

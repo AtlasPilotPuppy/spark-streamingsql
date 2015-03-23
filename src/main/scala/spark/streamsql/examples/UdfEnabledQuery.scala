@@ -21,7 +21,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import org.apache.spark.streaming.dstream.ConstantInputDStream
 
-import spark.streamsql.StreamQLContext
+import spark.streamsql.StreamSQLContext
 
 object UdfEnabledQuery {
   case class SingleWord(word: String)
@@ -30,14 +30,14 @@ object UdfEnabledQuery {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
     val sc = ssc.sparkContext
 
-    val streamQlContext = new StreamQLContext(ssc, new SQLContext(sc))
-    import streamQlContext._
+    val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
+    import streamSqlContext._
 
     val dummyRDD = sc.parallelize(1 to 100).map(i => SingleWord(s"$i"))
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
     registerDStreamAsTable(dummyStream, "test")
 
-    registerFunction("IsEven", (word: String) => {
+    streamSqlContext.udf.register("IsEven", (word: String) => {
       val number = word.toInt
       if (number % 2 == 0) {
         "even number"
@@ -49,7 +49,7 @@ object UdfEnabledQuery {
     sql("SELECT IsEven(word) FROM test").foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTermination(30 * 1000)
+    ssc.awaitTerminationOrTimeout(30 * 1000)
     ssc.stop()
   }
 }

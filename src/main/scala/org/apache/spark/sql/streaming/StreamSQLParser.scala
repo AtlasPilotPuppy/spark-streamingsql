@@ -42,14 +42,14 @@ import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
  * it is the constraint of Spark Streaming.
  * 4. Mix time-based window and row-based window is not supported yet.
  */
-class StreamQLParser extends SqlParser {
+class StreamSQLParser extends SqlParser {
 
-  override def apply(input: String): LogicalPlan = ???
-
-  def parse(input: String): Option[LogicalPlan] = {
-    phrase(start)(new lexical.Scanner(input)) match {
-      case Success(plan, _) => Some(plan)
-      case x => None
+  def apply(input: String, exceptionOnError: Boolean): Option[LogicalPlan] = {
+    try {
+      Some(apply(input))
+    } catch {
+      case _ if !exceptionOnError => None
+      case x: Throwable => throw x
     }
   }
 
@@ -73,13 +73,13 @@ class StreamQLParser extends SqlParser {
     }
 
   protected override lazy val relationFactor: Parser[LogicalPlan] =
-    ( ident ~ windowOptions.? ~ ( opt(AS) ~> opt(ident)) ^^ {
-        case tableName ~ window ~ alias => window.map { w =>
+    ( rep1sep(ident, ".") ~ windowOptions.? ~ (opt(AS) ~> opt(ident)) ^^ {
+        case tableIdent ~ window ~ alias => window.map { w =>
           WindowedLogicalPlan(
             w._1,
             w._2,
-            UnresolvedRelation(None, tableName, alias))
-        }.getOrElse(UnresolvedRelation(None, tableName, alias))
+            UnresolvedRelation(tableIdent, alias))
+        }.getOrElse(UnresolvedRelation(tableIdent, alias))
       }
     | ("(" ~> start <~ ")") ~ (AS.? ~> ident) ^^ { case s ~ a => Subquery(a, s) }
     )

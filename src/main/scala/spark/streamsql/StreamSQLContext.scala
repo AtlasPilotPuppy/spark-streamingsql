@@ -27,13 +27,13 @@ import org.apache.spark.streaming.StreamingContext
  * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
-class StreamQLContext(
+class StreamSQLContext(
     streamContext: StreamingContext,
-    qlContext: SQLContext)
-  extends StreamQLConnector(streamContext, qlContext)
+    sqlContext: SQLContext)
+  extends StreamSQLConnector(streamContext, sqlContext)
   with StreamRelationMixin {
 
-  private lazy val ddlParser = new StreamDDLParser(this)
+  //private lazy val ddlParser = new StreamDDLParser(this)
 
   override def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(baseRelationConverter(plan))
@@ -45,6 +45,7 @@ class StreamQLContext(
    * Execute a command or DDL query and directly get the result. The query will be parsed to
    * stream DDL at first, if failed it will fall back to parser in SQLContext.
    */
+  /*
   override def command(sqlText: String): String = {
     ddlParser(sqlText).map { plan =>
       new SchemaRDD(qlContext, plan)
@@ -52,5 +53,6 @@ class StreamQLContext(
       qlContext.sql(sqlText)
     }.collect().map(_.toString()).mkString("\n")
   }
+  */
 }
 

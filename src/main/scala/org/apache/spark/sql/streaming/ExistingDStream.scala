@@ -30,15 +30,15 @@ import spark.streamsql.Utils
 
 /** A LogicalPlan wrapper of row based DStream. */
 case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
-    (val qlConnector: StreamQLConnector)
+    (val sqlConnector: StreamSQLConnector)
   extends LogicalPlan with MultiInstanceRelation {
   def children = Nil
 
   def newInstance() =
-    LogicalDStream(output.map(_.newInstance()), stream)(qlConnector).asInstanceOf[this.type]
+    LogicalDStream(output.map(_.newInstance()), stream)(sqlConnector).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(qlConnector.qlContext.defaultSizeInBytes)
+    sizeInBytes = BigInt(sqlConnector.sqlContext.conf.defaultSizeInBytes)
   )
 }
 
@@ -80,5 +80,4 @@ private[streaming] object PhysicalDStream {
     } else {
     }
   }
-
 }

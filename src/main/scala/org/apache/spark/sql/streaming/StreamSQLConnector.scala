@@ -21,12 +21,13 @@ import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.Logging
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
-import org.apache.spark.sql.{Row, SQLContext, StructType}
+import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.json.JsonRDD
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
@@ -34,23 +35,25 @@ import org.apache.spark.streaming.dstream.DStream
  * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
-class StreamQLConnector(
-    val streamContext: StreamingContext,
-    val qlContext: SQLContext)
+class StreamSQLConnector(
+    val streamingContext: StreamingContext,
+    val sqlContext: SQLContext)
   extends Logging
-  with ExpressionConversions
-  with UDFRegistrationWrapper {
+  with ExpressionConversions {
 
   // Get several internal fields of SQLContext to better control the flow.
-  protected lazy val analyzer = qlContext.analyzer
-  protected lazy val catalog = qlContext.catalog
-  protected lazy val optimizer = qlContext.optimizer
+  protected lazy val analyzer = sqlContext.analyzer
+  protected lazy val catalog = sqlContext.catalog
+  protected lazy val optimizer = sqlContext.optimizer
 
   // Query parser for streaming specific semantics.
-  protected lazy val streamQLParser = new StreamQLParser
+  protected lazy val streamSqlParser = new StreamSQLParser
 
   // Add stream specific strategy to the planner.
-  qlContext.extraStrategies = StreamStrategy :: Nil
+  sqlContext.experimental.extraStrategies = StreamStrategy :: Nil
+
+  /** udf interface for user to register udf through it */
+  val udf = sqlContext.udf
 
   def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(plan)
@@ -62,11 +65,11 @@ class StreamQLConnector(
    * Create a SchemaDStream from a normal DStream of case classes.
    */
   implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
-    SparkPlan.currentContext.set(qlContext)
-    val attributes = ScalaReflection.attributesFor[A]
-    val schema = StructType.fromAttributes(attributes)
+    SparkPlan.currentContext.set(sqlContext)
+    val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
-    new SchemaDStream(this, LogicalDStream(attributes, rowStream)(this))
+    new SchemaDStream(this, LogicalDStream(attributeSeq, rowStream)(this))
   }
 
   /**
@@ -84,7 +87,7 @@ class StreamQLConnector(
    * this DStream.
    */
   @DeveloperApi
-  def applySchema(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
+  def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
     val logicalPlan = LogicalDStream(attributes, rowStream)(this)
     new SchemaDStream(this, logicalPlan)
@@ -92,24 +95,24 @@ class StreamQLConnector(
 
   /**
    * Register DStream as a temporary table in the catalog. Temporary table exist only during the
-   * lifetime of this instance of ql context.
+   * lifetime of this instance of sql context.
    */
   def registerDStreamAsTable(stream: SchemaDStream, tableName: String): Unit = {
-    catalog.registerTable(None, tableName, stream.baseLogicalPlan)
+    catalog.registerTable(Seq(tableName), stream.baseLogicalPlan)
   }
 
   /**
    * Drop the temporary stream table with given table name in the catalog.
    */
   def dropTable(tableName: String): Unit = {
-    catalog.unregisterTable(None, tableName)
+    catalog.unregisterTable(Seq(tableName))
   }
 
   /**
    * Returns the specified stream table as a SchemaDStream
    */
   def table(tableName: String): SchemaDStream = {
-    new SchemaDStream(this, catalog.lookupRelation(None, tableName))
+    new SchemaDStream(this, catalog.lookupRelation(Seq(tableName)))
   }
 
   /**
@@ -117,7 +120,7 @@ class StreamQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
-    val plan = streamQLParser.parse(sqlText).getOrElse(qlContext.parseSql(sqlText))
+    val plan = streamSqlParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
     new SchemaDStream(this, plan)
   }
 
@@ -126,7 +129,7 @@ class StreamQLConnector(
    * this command).
    */
   def command(sqlText: String): String = {
-    qlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
+    sqlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
   }
 
   /**
@@ -135,8 +138,8 @@ class StreamQLConnector(
    */
   @Experimental
   def inferJsonSchema(path: String, samplingRatio: Double = 1.0): StructType = {
-    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
-    val jsonRdd = streamContext.sparkContext.textFile(path)
+    val colNameOfCorruptedJsonRecord = sqlContext.conf.columnNameOfCorruptRecord
+    val jsonRdd = streamingContext.sparkContext.textFile(path)
     JsonRDD.nullTypeToStringType(
       JsonRDD.inferSchema(jsonRdd, samplingRatio, colNameOfCorruptedJsonRecord))
   }
@@ -148,11 +151,11 @@ class StreamQLConnector(
    */
   @Experimental
   def jsonDStream(json: DStream[String], schema: StructType): SchemaDStream = {
-    val colNameOfCorruptedJsonRecord = qlContext.columnNameOfCorruptRecord
+    val colNameOfCorruptedJsonRecord = sqlContext.conf.columnNameOfCorruptRecord
     val rowDStream = json.transform { r =>
       JsonRDD.jsonStringToRow(r, schema, colNameOfCorruptedJsonRecord)
     }
-    applySchema(rowDStream, schema)
+    createSchemaDStream(rowDStream, schema)
   }
 
   /**

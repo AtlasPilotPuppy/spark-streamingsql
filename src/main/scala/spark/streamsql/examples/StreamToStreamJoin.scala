@@ -21,7 +21,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.dstream.ConstantInputDStream
 import org.apache.spark.streaming.{Duration, StreamingContext}
 
-import spark.streamsql.StreamQLContext
+import spark.streamsql.StreamSQLContext
 
 object StreamToStreamJoin {
   case class User(id: Int, name: String)
@@ -30,8 +30,8 @@ object StreamToStreamJoin {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
     val sc = ssc.sparkContext
 
-    val streamQlContext = new StreamQLContext(ssc, new SQLContext(sc))
-    import streamQlContext._
+    val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
+    import streamSqlContext._
 
     val userRDD1 = sc.parallelize(1 to 100).map(i => User(i / 2, s"$i"))
     val userStream1 = new ConstantInputDStream[User](ssc, userRDD1)
@@ -45,7 +45,7 @@ object StreamToStreamJoin {
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTermination(30 * 1000)
+    ssc.awaitTerminationOrTimeout(30 * 1000)
     ssc.stop()
   }
 }

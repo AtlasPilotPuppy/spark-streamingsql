@@ -39,7 +39,7 @@ object WindowPushdown extends Rule[LogicalPlan] {
       }.getOrElse {
         stream.window(window)
       }
-      LogicalDStream(attr, windowedStream)(p.qlConnector)
+      LogicalDStream(attr, windowedStream)(p.sqlConnector)
   }
 }
 

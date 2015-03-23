@@ -21,7 +21,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import org.apache.spark.streaming.dstream.ConstantInputDStream
 
-import spark.streamsql.StreamQLContext
+import spark.streamsql.StreamSQLContext
 
 object WordCountQuery {
   case class SingleWord(word: String)
@@ -30,8 +30,8 @@ object WordCountQuery {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
     val sc = ssc.sparkContext
 
-    val streamQlContext = new StreamQLContext(ssc, new SQLContext(sc))
-    import streamQlContext._
+    val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
+    import streamSqlContext._
 
     val dummyRDD = sc.parallelize(1 to 10).map(i => SingleWord(s"$i"))
     val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
@@ -45,7 +45,7 @@ object WordCountQuery {
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTermination(18 * 1000)
+    ssc.awaitTerminationOrTimeout(18 * 1000)
     ssc.stop()
   }
 }

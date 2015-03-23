@@ -35,25 +35,25 @@ import org.apache.spark.streaming.dstream.DStream
  * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
-class StreamQLConnector(
+class StreamSQLConnector(
     val streamContext: StreamingContext,
-    val qlContext: SQLContext)
+    val sqlContext: SQLContext)
   extends Logging
   with ExpressionConversions {
 
   // Get several internal fields of SQLContext to better control the flow.
-  protected lazy val analyzer = qlContext.analyzer
-  protected lazy val catalog = qlContext.catalog
-  protected lazy val optimizer = qlContext.optimizer
+  protected lazy val analyzer = sqlContext.analyzer
+  protected lazy val catalog = sqlContext.catalog
+  protected lazy val optimizer = sqlContext.optimizer
 
   // Query parser for streaming specific semantics.
   protected lazy val streamQLParser = new StreamQLParser
 
   // Add stream specific strategy to the planner.
-  qlContext.experimental.extraStrategies = StreamStrategy :: Nil
+  sqlContext.experimental.extraStrategies = StreamStrategy :: Nil
 
   /** udf interface for user to register udf through it */
-  val udf = qlContext.udf
+  val udf = sqlContext.udf
 
   def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(plan)
@@ -65,7 +65,7 @@ class StreamQLConnector(
    * Create a SchemaDStream from a normal DStream of case classes.
    */
   implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
-    SparkPlan.currentContext.set(qlContext)
+    SparkPlan.currentContext.set(sqlContext)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
@@ -87,7 +87,7 @@ class StreamQLConnector(
    * this DStream.
    */
   @DeveloperApi
-  def applySchema(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
+  def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
     val logicalPlan = LogicalDStream(attributes, rowStream)(this)
     new SchemaDStream(this, logicalPlan)
@@ -95,7 +95,7 @@ class StreamQLConnector(
 
   /**
    * Register DStream as a temporary table in the catalog. Temporary table exist only during the
-   * lifetime of this instance of ql context.
+   * lifetime of this instance of sql context.
    */
   def registerDStreamAsTable(stream: SchemaDStream, tableName: String): Unit = {
     catalog.registerTable(Seq(tableName), stream.baseLogicalPlan)
@@ -120,7 +120,7 @@ class StreamQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
-    val plan = streamQLParser(sqlText, false).getOrElse(qlContext.parseSql(sqlText))
+    val plan = streamQLParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
     new SchemaDStream(this, plan)
   }
 
@@ -129,7 +129,7 @@ class StreamQLConnector(
    * this command).
    */
   def command(sqlText: String): String = {
-    qlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
+    sqlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
   }
 
   /**
@@ -138,7 +138,7 @@ class StreamQLConnector(
    */
   @Experimental
   def inferJsonSchema(path: String, samplingRatio: Double = 1.0): StructType = {
-    val colNameOfCorruptedJsonRecord = qlContext.conf.columnNameOfCorruptRecord
+    val colNameOfCorruptedJsonRecord = sqlContext.conf.columnNameOfCorruptRecord
     val jsonRdd = streamContext.sparkContext.textFile(path)
     JsonRDD.nullTypeToStringType(
       JsonRDD.inferSchema(jsonRdd, samplingRatio, colNameOfCorruptedJsonRecord))
@@ -151,11 +151,11 @@ class StreamQLConnector(
    */
   @Experimental
   def jsonDStream(json: DStream[String], schema: StructType): SchemaDStream = {
-    val colNameOfCorruptedJsonRecord = qlContext.conf.columnNameOfCorruptRecord
+    val colNameOfCorruptedJsonRecord = sqlContext.conf.columnNameOfCorruptRecord
     val rowDStream = json.transform { r =>
       JsonRDD.jsonStringToRow(r, schema, colNameOfCorruptedJsonRecord)
     }
-    applySchema(rowDStream, schema)
+    createSchemaDStream(rowDStream, schema)
   }
 
   /**

@@ -25,7 +25,7 @@ import org.apache.spark.streaming.dstream.DStream
 
 /** Mix the stream relation creation function into StreamQLConnector. */
 trait StreamRelationMixin {
-  self: StreamQLConnector =>
+  self: StreamSQLConnector =>
 
   def baseRelationToSchemaDStream(baseRelation: BaseRelation): SchemaDStream = {
     logicalPlanToStreamQuery(LogicalRelation(baseRelation))
@@ -45,14 +45,14 @@ trait StreamRelationMixin {
 }
 
 trait StreamRelationProvider {
-  def createRelation(streamQLContext: StreamQLConnector, parameter: Map[String, String])
+  def createRelation(streamSqlConnector: StreamSQLConnector, parameter: Map[String, String])
     : StreamBaseRelation
 }
 
 abstract class StreamBaseRelation extends BaseRelation {
-  val sqlContext = streamQLConnector.qlContext
+  val sqlContext = streamSqlConnector.sqlContext
 
-  def streamQLConnector: StreamQLConnector
+  def streamSqlConnector: StreamSQLConnector
 }
 
 /**

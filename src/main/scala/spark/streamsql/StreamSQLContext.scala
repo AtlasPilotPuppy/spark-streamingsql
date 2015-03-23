@@ -27,10 +27,10 @@ import org.apache.spark.streaming.StreamingContext
  * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
-class StreamQLContext(
+class StreamSQLContext(
     streamContext: StreamingContext,
-    qlContext: SQLContext)
-  extends StreamQLConnector(streamContext, qlContext)
+    sqlContext: SQLContext)
+  extends StreamSQLConnector(streamContext, sqlContext)
   with StreamRelationMixin {
 
   //private lazy val ddlParser = new StreamDDLParser(this)

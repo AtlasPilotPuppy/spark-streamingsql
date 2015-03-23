@@ -28,7 +28,7 @@ import org.apache.spark.streaming.dstream.DStream
 import spark.streamsql.Utils
 
 /**
- * Logical plan of time-based window and window pushdown optimizer.
+ * Logical and physical plan of time-based window.
  */
 case class WindowedLogicalPlan(
     windowDuration: Duration,

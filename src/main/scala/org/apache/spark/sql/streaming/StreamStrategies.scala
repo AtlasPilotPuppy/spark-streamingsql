@@ -31,7 +31,7 @@ class StreamStrategies extends QueryPlanner[SparkPlan] {
   object StreamStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStream(output, stream) => PhysicalDStream(output, stream) :: Nil
-      case x@WindowedLogicalPlan(w, s, child) =>
+      case x @ WindowedLogicalPlan(w, s, child) =>
         WindowedPhysicalPlan(w, s, planLater(child))(x.streamSqlConnector) :: Nil
       case _ => Nil
     }

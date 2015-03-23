@@ -36,7 +36,7 @@ import org.apache.spark.streaming.dstream.DStream
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
 class StreamSQLConnector(
-    val streamContext: StreamingContext,
+    val streamingContext: StreamingContext,
     val sqlContext: SQLContext)
   extends Logging
   with ExpressionConversions {
@@ -47,7 +47,7 @@ class StreamSQLConnector(
   protected lazy val optimizer = sqlContext.optimizer
 
   // Query parser for streaming specific semantics.
-  protected lazy val streamQLParser = new StreamQLParser
+  protected lazy val streamSqlParser = new StreamSQLParser
 
   // Add stream specific strategy to the planner.
   sqlContext.experimental.extraStrategies = StreamStrategy :: Nil
@@ -120,7 +120,7 @@ class StreamSQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
-    val plan = streamQLParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
+    val plan = streamSqlParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
     new SchemaDStream(this, plan)
   }
 
@@ -139,7 +139,7 @@ class StreamSQLConnector(
   @Experimental
   def inferJsonSchema(path: String, samplingRatio: Double = 1.0): StructType = {
     val colNameOfCorruptedJsonRecord = sqlContext.conf.columnNameOfCorruptRecord
-    val jsonRdd = streamContext.sparkContext.textFile(path)
+    val jsonRdd = streamingContext.sparkContext.textFile(path)
     JsonRDD.nullTypeToStringType(
       JsonRDD.inferSchema(jsonRdd, samplingRatio, colNameOfCorruptedJsonRecord))
   }

@@ -80,5 +80,4 @@ private[streaming] object PhysicalDStream {
     } else {
     }
   }
-
 }

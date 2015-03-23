@@ -45,7 +45,7 @@ import org.apache.spark.streaming.{Duration, Time}
 class SchemaDStream(
     val sqlConnector: StreamSQLConnector,
     val baseLogicalPlan: LogicalPlan)
-  extends DStream[Row](sqlConnector.streamContext) {
+  extends DStream[Row](sqlConnector.streamingContext) {
 
   override def dependencies = physicalStream.toList
 

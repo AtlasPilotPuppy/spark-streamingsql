@@ -25,8 +25,8 @@ import org.apache.spark.streaming.Duration
  * Logical plan of time-based window and window pushdown optimizer.
  */
 case class WindowedLogicalPlan(
-  window: Duration,
-  slide: Option[Duration],
+  windowDuration: Duration,
+  slideDuration: Option[Duration],
   child: LogicalPlan) extends UnaryNode {
   override def output = child.output
 }

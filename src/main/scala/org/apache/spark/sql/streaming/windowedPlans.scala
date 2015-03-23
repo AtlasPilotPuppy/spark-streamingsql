@@ -17,32 +17,59 @@
 
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.catalyst.plans.logical.{UnaryNode, LogicalPlan}
-import org.apache.spark.sql.catalyst.rules.{RuleExecutor, Rule}
-import org.apache.spark.streaming.Duration
+import org.apache.spark.rdd.{EmptyRDD, RDD}
+import org.apache.spark.sql.{execution, Row}
+import org.apache.spark.sql.catalyst.plans.logical
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.streaming.{Time, Duration}
+import org.apache.spark.streaming.dstream.DStream
+
+import spark.streamsql.Utils
 
 /**
  * Logical plan of time-based window and window pushdown optimizer.
  */
 case class WindowedLogicalPlan(
-  windowDuration: Duration,
-  slideDuration: Option[Duration],
-  child: LogicalPlan) extends UnaryNode {
+    windowDuration: Duration,
+    slideDuration: Option[Duration],
+    child: LogicalPlan)(@transient val streamSqlConnector: StreamSQLConnector)
+  extends logical.UnaryNode {
   override def output = child.output
+  override protected def otherCopyArgs: Seq[AnyRef] = streamSqlConnector :: Nil
 }
 
-object WindowPushdown extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-    case WindowedLogicalPlan(window, slide, p @ LogicalDStream(attr, stream)) =>
-      val windowedStream = slide.map { s =>
-        stream.window(window, s)
-      }.getOrElse {
-        stream.window(window)
+case class WindowedPhysicalPlan(
+    windowDuration: Duration,
+    slideDuration: Option[Duration],
+    child: SparkPlan)(@transient val streamSqlConnector: StreamSQLConnector)
+  extends execution.UnaryNode with StreamPlan {
+
+  @transient private val wrappedStream =
+    new DStream[Row](streamSqlConnector.streamingContext) {
+
+    override def dependencies = parentStreams.toList
+    override def slideDuration: Duration = parentStreams.head.slideDuration
+    override def compute(validTime: Time): Option[RDD[Row]] = Some(child.execute())
+
+    private lazy val parentStreams = {
+      def traverse(plan: SparkPlan): Seq[DStream[Row]] = plan match {
+          case x: StreamPlan => x.stream :: Nil
+          case _ => plan.children.flatMap(traverse(_))
       }
-      LogicalDStream(attr, windowedStream)(p.sqlConnector)
+      traverse(child)
+    }
   }
-}
 
-object WindowOptimizer extends RuleExecutor[LogicalPlan] {
-  val batches = Batch("Window Optimizer", FixedPoint(100), WindowPushdown) :: Nil
+  @transient val stream = slideDuration.map(wrappedStream.window(windowDuration, _))
+    .getOrElse(wrappedStream.window(windowDuration))
+
+  override def output = child.output
+  override def execute() = {
+    import DStreamHelper._
+    assert(validTime != null)
+    Utils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
+      .asInstanceOf[Option[RDD[Row]]]
+      .getOrElse(new EmptyRDD[Row](sparkContext))
+  }
 }

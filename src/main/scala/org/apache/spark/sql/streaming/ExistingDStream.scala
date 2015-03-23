@@ -18,11 +18,11 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.{RDD, EmptyRDD}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.{Statistics, LogicalPlan}
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.{Row, Strategy}
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
@@ -48,8 +48,8 @@ case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
  */
 private[streaming]
 case class PhysicalDStream(output: Seq[Attribute], @transient stream: DStream[Row])
-    extends SparkPlan {
-  import PhysicalDStream._
+    extends SparkPlan with StreamPlan {
+  import DStreamHelper._
 
   def children = Nil
 
@@ -61,23 +61,4 @@ case class PhysicalDStream(output: Seq[Attribute], @transient stream: DStream[Ro
   }
 }
 
-/** Stream related strategies to map stream specific logical plan to physical plan. */
-private[streaming] object StreamStrategy extends Strategy {
-  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-    case LogicalDStream(output, stream) => PhysicalDStream(output, stream) :: Nil
-    case _ => Nil
-  }
-}
 
-private[streaming] object PhysicalDStream {
-  var validTime: Time = null
-
-  def setValidTime(time: Time): Unit = {
-    if (validTime == null) {
-      validTime = time
-    } else if (validTime != time) {
-      validTime = time
-    } else {
-    }
-  }
-}

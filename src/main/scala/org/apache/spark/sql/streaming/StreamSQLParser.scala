@@ -35,14 +35,13 @@ import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
  * The time-based window support is different from SQL standard row-based window function,
  * in which time-based window is a constraint of stream relation, so it must be followed by
  * " FROM streamized_table OVER (...), currently it has some limitations:
- * 1. time-based window over subquery is not supported yet.
- * 2. WINDOW alias like SELECT ... FROM table OVER w ... WINDOW w (WINDOW "6" SECONDS,
+ * 1. WINDOW alias like SELECT ... FROM table OVER w ... WINDOW w (WINDOW "6" SECONDS,
  * ...) is not supported yet.
- * 3. for windowed join, two streamized table need to have same window constraint,
+ * 2. for windowed join, two streamized table need to have same window constraint,
  * it is the constraint of Spark Streaming.
- * 4. Mix time-based window and row-based window is not supported yet.
+ * 3. Mix time-based window and row-based window is not supported yet.
  */
-class StreamSQLParser extends SqlParser {
+class StreamSQLParser(streamSqlConnector: StreamSQLConnector) extends SqlParser {
 
   def apply(input: String, exceptionOnError: Boolean): Option[LogicalPlan] = {
     try {
@@ -78,9 +77,16 @@ class StreamSQLParser extends SqlParser {
           WindowedLogicalPlan(
             w._1,
             w._2,
-            UnresolvedRelation(tableIdent, alias))
+            UnresolvedRelation(tableIdent, alias))(streamSqlConnector)
         }.getOrElse(UnresolvedRelation(tableIdent, alias))
       }
-    | ("(" ~> start <~ ")") ~ (AS.? ~> ident) ^^ { case s ~ a => Subquery(a, s) }
+    | ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
+        case s ~ w ~ a => w.map { x =>
+          WindowedLogicalPlan(
+            x._1,
+            x._2,
+            Subquery(a, s))(streamSqlConnector)
+        }.getOrElse(Subquery(a, s))
+      }
     )
 }

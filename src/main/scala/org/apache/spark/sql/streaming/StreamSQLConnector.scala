@@ -47,17 +47,18 @@ class StreamSQLConnector(
   protected lazy val optimizer = sqlContext.optimizer
 
   // Query parser for streaming specific semantics.
-  protected lazy val streamSqlParser = new StreamSQLParser
+  protected lazy val streamSqlParser = new StreamSQLParser(this)
 
   // Add stream specific strategy to the planner.
-  sqlContext.experimental.extraStrategies = StreamStrategy :: Nil
+  protected lazy val streamStrategies = new StreamStrategies
+  sqlContext.experimental.extraStrategies = streamStrategies.strategies
 
   /** udf interface for user to register udf through it */
   val udf = sqlContext.udf
 
   def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(plan)
-    val optimized = WindowOptimizer(optimizer(analyzed))
+    val optimized = optimizer(analyzed)
     optimized
   }
 
@@ -98,7 +99,7 @@ class StreamSQLConnector(
    * lifetime of this instance of sql context.
    */
   def registerDStreamAsTable(stream: SchemaDStream, tableName: String): Unit = {
-    catalog.registerTable(Seq(tableName), stream.baseLogicalPlan)
+    catalog.registerTable(Seq(tableName), stream.logicalPlan)
   }
 
   /**

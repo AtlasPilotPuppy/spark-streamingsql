@@ -17,6 +17,7 @@
 
 package spark.streamsql.examples
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import org.apache.spark.streaming.dstream.ConstantInputDStream
@@ -38,9 +39,9 @@ object WordCountQuery {
     registerDStreamAsTable(dummyStream, "test")
     sql(
       """
-        |SELECT word, COUNT(word)
-        |FROM test OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS)
-        |GROUP BY word
+        |SELECT t.word, COUNT(t.word)
+        |FROM (SELECT * FROM test) OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS) AS t
+        |GROUP BY t.word
       """.stripMargin)
       .foreachRDD { r => r.foreach(println) }
 

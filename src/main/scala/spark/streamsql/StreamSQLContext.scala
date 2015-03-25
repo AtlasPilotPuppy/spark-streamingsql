@@ -37,7 +37,7 @@ class StreamSQLContext(
 
   override def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
     val analyzed = analyzer(baseRelationConverter(plan))
-    val optimized = WindowOptimizer(optimizer(analyzed))
+    val optimized = optimizer(analyzed)
     optimized
   }
 

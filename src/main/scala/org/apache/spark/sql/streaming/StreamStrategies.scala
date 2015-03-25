@@ -21,6 +21,7 @@ import org.apache.spark.sql.Strategy
 import org.apache.spark.sql.catalyst.planning.QueryPlanner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.sources.LogicalRelation
 import org.apache.spark.streaming.Time
 
 /** Stream related strategies to map stream specific logical plan to physical plan. */
@@ -32,7 +33,9 @@ class StreamStrategies extends QueryPlanner[SparkPlan] {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStream(output, stream) => PhysicalDStream(output, stream) :: Nil
       case x @ WindowedLogicalPlan(w, s, child) =>
-        WindowedPhysicalPlan(w, s, planLater(child))(x.streamSqlConnector) :: Nil
+        WindowedPhysicalPlan(w, s, planLater(child)) :: Nil
+      case l @ LogicalRelation(t: StreamPlan) =>
+        PhysicalDStream(l.output, t.stream) :: Nil
       case _ => Nil
     }
   }

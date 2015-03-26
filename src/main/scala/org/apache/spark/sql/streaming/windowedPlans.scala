@@ -33,16 +33,15 @@ import spark.streamsql.Utils
 case class WindowedLogicalPlan(
     windowDuration: Duration,
     slideDuration: Option[Duration],
-    child: LogicalPlan)(@transient val streamSqlConnector: StreamSQLConnector)
+    child: LogicalPlan)
   extends logical.UnaryNode {
   override def output = child.output
-  override protected def otherCopyArgs: Seq[AnyRef] = streamSqlConnector :: Nil
 }
 
 case class WindowedPhysicalPlan(
     windowDuration: Duration,
     slideDuration: Option[Duration],
-    child: SparkPlan)(@transient val streamSqlConnector: StreamSQLConnector)
+    child: SparkPlan)
   extends execution.UnaryNode with StreamPlan {
 
   @transient private val wrappedStream =

@@ -28,7 +28,8 @@ object Dependencies {
     "org.apache.spark" %% "spark-sql"  % SPARK_VERSION excludeAll(excludeAsm),
     "org.apache.spark" %% "spark-catalyst" % SPARK_VERSION excludeAll(excludeAsm),
     "org.apache.spark" %% "spark-hive" % SPARK_VERSION excludeAll(excludeAsm),
-    "org.apache.spark" %% "spark-streaming" % SPARK_VERSION excludeAll(excludeAsm)
+    "org.apache.spark" %% "spark-streaming" % SPARK_VERSION excludeAll(excludeAsm),
+    "org.apache.spark" %% "spark-streaming-kafka" % SPARK_VERSION excludeAll(excludeAsm)
   )
 
   lazy val testDeps = Seq(

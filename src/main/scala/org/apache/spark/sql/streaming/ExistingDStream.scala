@@ -60,5 +60,3 @@ case class PhysicalDStream(output: Seq[Attribute], @transient stream: DStream[Ro
       .getOrElse(new EmptyRDD[Row](sparkContext))
   }
 }
-
-

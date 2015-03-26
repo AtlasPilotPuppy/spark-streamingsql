@@ -67,6 +67,7 @@ class StreamSQLConnector(
    */
   implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
     SparkPlan.currentContext.set(sqlContext)
+    StreamPlan.currentContext.set(this)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema))
@@ -89,6 +90,8 @@ class StreamSQLConnector(
    */
   @DeveloperApi
   def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
+    SparkPlan.currentContext.set(sqlContext)
+    StreamPlan.currentContext.set(this)
     val attributes = schema.toAttributes
     val logicalPlan = LogicalDStream(attributes, rowStream)(this)
     new SchemaDStream(this, logicalPlan)
@@ -121,6 +124,8 @@ class StreamSQLConnector(
    * actual parser backed by the initialized ql context.
    */
   def sql(sqlText: String): SchemaDStream = {
+    SparkPlan.currentContext.set(sqlContext)
+    StreamPlan.currentContext.set(this)
     val plan = streamSqlParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
     new SchemaDStream(this, plan)
   }
@@ -130,6 +135,8 @@ class StreamSQLConnector(
    * this command).
    */
   def command(sqlText: String): String = {
+    SparkPlan.currentContext.set(sqlContext)
+    StreamPlan.currentContext.set(this)
     sqlContext.sql(sqlText).collect().map(_.toString()).mkString("\n")
   }
 

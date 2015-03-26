@@ -31,28 +31,4 @@ class StreamSQLContext(
     streamContext: StreamingContext,
     sqlContext: SQLContext)
   extends StreamSQLConnector(streamContext, sqlContext)
-  with StreamRelationMixin {
-
-  //private lazy val ddlParser = new StreamDDLParser(this)
-
-  override def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
-    val analyzed = analyzer(baseRelationConverter(plan))
-    val optimized = optimizer(analyzed)
-    optimized
-  }
-
-  /**
-   * Execute a command or DDL query and directly get the result. The query will be parsed to
-   * stream DDL at first, if failed it will fall back to parser in SQLContext.
-   */
-  /*
-  override def command(sqlText: String): String = {
-    ddlParser(sqlText).map { plan =>
-      new SchemaRDD(qlContext, plan)
-    }.getOrElse {
-      qlContext.sql(sqlText)
-    }.collect().map(_.toString()).mkString("\n")
-  }
-  */
-}
 

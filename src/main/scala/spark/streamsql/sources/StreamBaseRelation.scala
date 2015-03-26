@@ -15,16 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.streaming
+package spark.streamsql.sources
 
-import org.apache.spark.sql.Row
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.streaming.StreamPlan
 
-object StreamPlan {
-  val currentContext = new ThreadLocal[StreamSQLConnector]()
-}
-
-trait StreamPlan {
-  def streamSqlConnector = StreamPlan.currentContext.get()
-  def stream: DStream[Row]
-}
+abstract class StreamBaseRelation extends BaseRelation with StreamPlan

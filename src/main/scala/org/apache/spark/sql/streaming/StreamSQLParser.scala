@@ -77,7 +77,7 @@ class StreamSQLParser(streamSqlConnector: StreamSQLConnector) extends SqlParser 
           WindowedLogicalPlan(
             w._1,
             w._2,
-            UnresolvedRelation(tableIdent, alias))(streamSqlConnector)
+            UnresolvedRelation(tableIdent, alias))
         }.getOrElse(UnresolvedRelation(tableIdent, alias))
       }
     | ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
@@ -85,7 +85,7 @@ class StreamSQLParser(streamSqlConnector: StreamSQLConnector) extends SqlParser 
           WindowedLogicalPlan(
             x._1,
             x._2,
-            Subquery(a, s))(streamSqlConnector)
+            Subquery(a, s))
         }.getOrElse(Subquery(a, s))
       }
     )

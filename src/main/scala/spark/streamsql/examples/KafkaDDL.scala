@@ -24,7 +24,7 @@ import spark.streamsql.StreamSQLContext
 import spark.streamsql.sources.MessageToRowConverter
 
 class MessageDelimiter extends MessageToRowConverter {
-  def toRow(msg: String): Row = Row(msg.split(" "): _*)
+  def toRow(msg: String): Row = Row(msg)
 }
 
 object KafkaDDL {

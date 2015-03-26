@@ -64,7 +64,8 @@ class SchemaDStream(
   // To guard out some unsupported logical plans.
   @transient private[streaming] val logicalPlan: LogicalPlan = queryExecution.logical match {
     case _: InsertIntoTable | _: CreateTableAsSelect[_] | _: WriteToFile =>
-      throw new IllegalStateException(s"logical plan $logicalPlan is not supported currently")
+      throw new IllegalStateException(s"logical plan ${queryExecution.logical} " +
+        s"is not supported currently")
     case _ => queryExecution.logical
   }
 

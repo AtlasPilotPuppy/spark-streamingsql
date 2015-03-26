@@ -46,7 +46,6 @@ case class WindowedPhysicalPlan(
 
   @transient private val wrappedStream =
     new DStream[Row](streamSqlConnector.streamingContext) {
-
     override def dependencies = parentStreams.toList
     override def slideDuration: Duration = parentStreams.head.slideDuration
     override def compute(validTime: Time): Option[RDD[Row]] = Some(child.execute())
@@ -64,6 +63,7 @@ case class WindowedPhysicalPlan(
     .getOrElse(wrappedStream.window(windowDuration))
 
   override def output = child.output
+
   override def execute() = {
     import DStreamHelper._
     assert(validTime != null)

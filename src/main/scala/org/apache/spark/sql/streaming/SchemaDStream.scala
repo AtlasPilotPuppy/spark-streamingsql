@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.{Inner, JoinType}
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ExplainCommand, SparkPlan}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
 
@@ -63,7 +63,7 @@ class SchemaDStream(
 
   // To guard out some unsupported logical plans.
   @transient private[streaming] val logicalPlan: LogicalPlan = queryExecution.logical match {
-    case _: Command | _: InsertIntoTable | _: CreateTableAsSelect[_] | _: WriteToFile =>
+    case _: InsertIntoTable | _: CreateTableAsSelect[_] | _: WriteToFile =>
       throw new IllegalStateException(s"logical plan $logicalPlan is not supported currently")
     case _ => queryExecution.logical
   }
@@ -77,7 +77,7 @@ class SchemaDStream(
   }
 
   /**
-   * Returns the schema of this SchemaDStream (represented by a [[StructType]]]).
+   * Returns the schema of this SchemaDStream (represented by a [[StructType]]).
    */
   def schema: StructType = queryExecution.analyzed.schema
 
@@ -212,5 +212,16 @@ class SchemaDStream(
    */
   def registerAsTable(tableName: String): Unit = {
     sqlConnector.registerDStreamAsTable(this, tableName)
+  }
+
+  /**
+   * Explain the query to get logical plan as well as physical plan.
+   */
+  def explain(extended: Boolean): Unit = {
+    sqlConnector.logicalPlanToStreamQuery(
+      ExplainCommand(queryExecution.logical, extended = extended))
+        .queryExecution.executedPlan.executeCollect().map {
+      r => println(r.getString(0))
+    }
   }
 }

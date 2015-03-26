@@ -17,8 +17,7 @@
 
 package spark.streamsql
 
-import org.apache.spark.sql.{SchemaRDD, SQLContext}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.streaming._
 import org.apache.spark.streaming.StreamingContext
 
@@ -28,7 +27,7 @@ import org.apache.spark.streaming.StreamingContext
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
 class StreamSQLContext(
-    streamContext: StreamingContext,
+    streamingContext: StreamingContext,
     sqlContext: SQLContext)
-  extends StreamSQLConnector(streamContext, sqlContext)
+  extends StreamSQLConnector(streamingContext, sqlContext)
 

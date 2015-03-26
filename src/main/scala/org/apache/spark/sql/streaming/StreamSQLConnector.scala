@@ -41,10 +41,8 @@ class StreamSQLConnector(
   extends Logging
   with ExpressionConversions {
 
-  // Get several internal fields of SQLContext to better control the flow.
-  protected lazy val analyzer = sqlContext.analyzer
+  // Get internal field of SQLContext to better control the flow.
   protected lazy val catalog = sqlContext.catalog
-  protected lazy val optimizer = sqlContext.optimizer
 
   // Query parser for streaming specific semantics.
   protected lazy val streamSqlParser = new StreamSQLParser(this)
@@ -55,12 +53,6 @@ class StreamSQLConnector(
 
   /** udf interface for user to register udf through it */
   val udf = sqlContext.udf
-
-  def preOptimizePlan(plan: LogicalPlan): LogicalPlan = {
-    val analyzed = analyzer(plan)
-    val optimized = optimizer(analyzed)
-    optimized
-  }
 
   /**
    * Create a SchemaDStream from a normal DStream of case classes.

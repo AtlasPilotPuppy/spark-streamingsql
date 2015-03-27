@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package spark.streamsql.sources
+package org.apache.spark.sql.streaming.sources
 
 import kafka.serializer.StringDecoder
 import org.apache.spark.sql.{Row, SQLContext}
@@ -75,7 +75,7 @@ class KafkaSource extends SchemaRelationProvider {
 
 /**
  * `CREATE [TEMPORARY] TABLE kafkaTable(intField, stringField string...) [IF NOT EXISTS]
- * USING spark.streamsql.sources.KafkaSource
+ * USING org.apache.spark.sql.streaming.sources.KafkaSource
  * OPTIONS (topics "aa:1,bb:1",
  *   groupId "test",
  *   zkQuorum "localhost:2181",
@@ -104,7 +104,7 @@ case class KafkaRelation(
     String,
     StringDecoder,
     StringDecoder
-    ](streamSqlConnector.streamingContext, kafkaParams, topics, StorageLevel.MEMORY_AND_DISK_SER_2)
+    ](streamSqlContext.streamingContext, kafkaParams, topics, StorageLevel.MEMORY_AND_DISK_SER_2)
 
   @transient val stream: DStream[Row] = kafkaStream.map(_._2).map(messageToRowConverter.toRow)
 }

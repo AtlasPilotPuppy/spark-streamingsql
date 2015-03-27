@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package spark.streamsql
+package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.streaming._
-import org.apache.spark.streaming.StreamingContext
+object Utils {
 
-/**
- * The entry point of stream query engine.
- * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
- * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
- */
-class StreamSQLContext(
-    streamingContext: StreamingContext,
-    sqlContext: SQLContext)
-  extends StreamSQLConnector(streamingContext, sqlContext)
-
+  def invoke(
+      clazz: Class[_],
+      obj: AnyRef,
+      methodName: String,
+      args: (Class[_], AnyRef)*): AnyRef = {
+    val (types, values) = args.unzip
+    val method = clazz.getDeclaredMethod(methodName, types: _*)
+    method.setAccessible(true)
+    method.invoke(obj, values.toSeq: _*)
+  }
+}

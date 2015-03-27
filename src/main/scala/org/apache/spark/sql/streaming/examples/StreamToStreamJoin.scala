@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package spark.streamsql.examples
+package org.apache.spark.sql.streaming.examples
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.streaming.{Duration, StreamingContext}
+import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.dstream.ConstantInputDStream
+import org.apache.spark.streaming.{Duration, StreamingContext}
 
-import spark.streamsql.StreamSQLContext
-
-object UdfEnabledQuery {
-  case class SingleWord(word: String)
+object StreamToStreamJoin {
+  case class User(id: Int, name: String)
 
   def main(args: Array[String]): Unit = {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
@@ -33,20 +32,16 @@ object UdfEnabledQuery {
     val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
     import streamSqlContext._
 
-    val dummyRDD = sc.parallelize(1 to 100).map(i => SingleWord(s"$i"))
-    val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
-    registerDStreamAsTable(dummyStream, "test")
+    val userRDD1 = sc.parallelize(1 to 100).map(i => User(i / 2, s"$i"))
+    val userStream1 = new ConstantInputDStream[User](ssc, userRDD1)
+    registerDStreamAsTable(userStream1, "user1")
 
-    streamSqlContext.udf.register("IsEven", (word: String) => {
-      val number = word.toInt
-      if (number % 2 == 0) {
-        "even number"
-      } else {
-        "odd number"
-      }
-    })
+    val userRDD2 = sc.parallelize(1 to 100).map(i => User(i / 5, s"$i"))
+    val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
+    registerDStreamAsTable(userStream2, "user2")
 
-    sql("SELECT IsEven(word) FROM test").foreachRDD { r => r.foreach(println) }
+    sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id")
+      .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
     ssc.awaitTerminationOrTimeout(30 * 1000)

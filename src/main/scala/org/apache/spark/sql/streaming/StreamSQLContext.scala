@@ -23,7 +23,6 @@ import org.apache.spark.Logging
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.sql.catalyst.ScalaReflection
-import org.apache.spark.sql.catalyst.dsl.ExpressionConversions
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.json.JsonRDD
@@ -35,11 +34,10 @@ import org.apache.spark.streaming.dstream.DStream
  * A component to connect StreamingContext with specific ql context ([[SQLContext]] or
  * [[HiveContext]]), offer user the ability to manipulate SQL and LINQ-like query on DStream
  */
-class StreamSQLConnector(
+class StreamSQLContext(
     val streamingContext: StreamingContext,
     val sqlContext: SQLContext)
-  extends Logging
-  with ExpressionConversions {
+  extends Logging {
 
   // Get internal field of SQLContext to better control the flow.
   protected lazy val catalog = sqlContext.catalog

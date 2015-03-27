@@ -26,19 +26,18 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
-import spark.streamsql.Utils
-
 /** A LogicalPlan wrapper of row based DStream. */
+private[streaming]
 case class LogicalDStream(output: Seq[Attribute], stream: DStream[Row])
-    (val sqlConnector: StreamSQLConnector)
+    (val streamSqlContext: StreamSQLContext)
   extends LogicalPlan with MultiInstanceRelation {
   def children = Nil
 
   def newInstance() =
-    LogicalDStream(output.map(_.newInstance()), stream)(sqlConnector).asInstanceOf[this.type]
+    LogicalDStream(output.map(_.newInstance()), stream)(streamSqlContext).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(sqlConnector.sqlContext.conf.defaultSizeInBytes)
+    sizeInBytes = BigInt(streamSqlContext.sqlContext.conf.defaultSizeInBytes)
   )
 }
 

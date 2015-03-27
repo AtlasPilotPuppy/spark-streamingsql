@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package spark.streamsql
+package org.apache.spark.sql.streaming.sources
 
-object Utils {
+import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.streaming.StreamPlan
 
-  def invoke(
-      clazz: Class[_],
-      obj: AnyRef,
-      methodName: String,
-      args: (Class[_], AnyRef)*): AnyRef = {
-    val (types, values) = args.unzip
-    val method = clazz.getDeclaredMethod(methodName, types: _*)
-    method.setAccessible(true)
-    method.invoke(obj, values.toSeq: _*)
-  }
-}
+abstract class StreamBaseRelation extends BaseRelation with StreamPlan

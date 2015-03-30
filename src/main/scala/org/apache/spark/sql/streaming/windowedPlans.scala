@@ -53,7 +53,9 @@ private[streaming] case class WindowedPhysicalPlan(
           case x: StreamPlan => x.stream :: Nil
           case _ => plan.children.flatMap(traverse(_))
       }
-      traverse(child)
+      val streams = traverse(child)
+      assert(!streams.isEmpty, s"Input query and related plan $child is not a stream plan")
+      streams
     }
   }
 

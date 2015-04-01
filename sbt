@@ -32,8 +32,6 @@ fi
 java -ea                          \
   $JAVA_OPTS                      \
   -Djava.net.preferIPv4Stack=true \
-  -Dhttp.proxyHost=proxy.jf.intel.com -Dhttp.proxyPort=912 \
-  -Dhttps.proxyHost=proxy.jf.intel.com -Dhttps.proxyPort=912 \
   -XX:+AggressiveOpts             \
   -XX:+UseParNewGC                \
   -XX:+UseConcMarkSweepGC         \

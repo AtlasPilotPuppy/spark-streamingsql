@@ -25,12 +25,10 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.streaming.{Time, Duration}
 import org.apache.spark.streaming.dstream.DStream
 
-import spark.streamsql.Utils
-
 /**
  * Logical and physical plan of time-based window.
  */
-case class WindowedLogicalPlan(
+private[streaming] case class WindowedLogicalPlan(
     windowDuration: Duration,
     slideDuration: Option[Duration],
     child: LogicalPlan)
@@ -38,14 +36,14 @@ case class WindowedLogicalPlan(
   override def output = child.output
 }
 
-case class WindowedPhysicalPlan(
+private[streaming] case class WindowedPhysicalPlan(
     windowDuration: Duration,
     slideDuration: Option[Duration],
     child: SparkPlan)
   extends execution.UnaryNode with StreamPlan {
 
   @transient private val wrappedStream =
-    new DStream[Row](streamSqlConnector.streamingContext) {
+    new DStream[Row](streamSqlContext.streamingContext) {
     override def dependencies = parentStreams.toList
     override def slideDuration: Duration = parentStreams.head.slideDuration
     override def compute(validTime: Time): Option[RDD[Row]] = Some(child.execute())
@@ -55,7 +53,9 @@ case class WindowedPhysicalPlan(
           case x: StreamPlan => x.stream :: Nil
           case _ => plan.children.flatMap(traverse(_))
       }
-      traverse(child)
+      val streams = traverse(child)
+      assert(!streams.isEmpty, s"Input query and related plan $child is not a stream plan")
+      streams
     }
   }
 

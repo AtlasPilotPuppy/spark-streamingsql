@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package spark.streamsql.examples
+package org.apache.spark.sql.streaming.examples
 
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.dstream.ConstantInputDStream
 import org.apache.spark.streaming.{Duration, StreamingContext}
 
-import spark.streamsql.StreamSQLContext
-
-object StreamToStreamJoin {
+object StreamToTableJoin {
   case class User(id: Int, name: String)
 
   def main(args: Array[String]): Unit = {
@@ -31,17 +30,26 @@ object StreamToStreamJoin {
     val sc = ssc.sparkContext
 
     val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
-    import streamSqlContext._
 
     val userRDD1 = sc.parallelize(1 to 100).map(i => User(i / 2, s"$i"))
-    val userStream1 = new ConstantInputDStream[User](ssc, userRDD1)
-    registerDStreamAsTable(userStream1, "user1")
+    val userStream1 = streamSqlContext.createSchemaDStream(
+      new ConstantInputDStream[User](ssc, userRDD1))
+    streamSqlContext.registerDStreamAsTable(userStream1, "user1")
 
-    val userRDD2 = sc.parallelize(1 to 100).map(i => User(i / 5, s"$i"))
-    val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
-    registerDStreamAsTable(userStream2, "user2")
+    val user2Df = streamSqlContext.sqlContext.createDataFrame(
+      sc.parallelize(1 to 100).map(i => User(i / 5, s"$i")))
+    user2Df.registerTempTable("user2")
 
-    sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id")
+    val userRDD3 = sc.parallelize(1 to 100).map(i => User(i / 10, s"$i"))
+    val userStream3 = streamSqlContext.createSchemaDStream(
+      new ConstantInputDStream[User](ssc, userRDD3))
+    streamSqlContext.registerDStreamAsTable(userStream3, "user3")
+
+    streamSqlContext.sql(
+      """
+        |SELECT * FROM user1 a, user2 b, user3 c
+        |WHERE a.id = b.id AND a.id = c.id
+      """.stripMargin)
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()

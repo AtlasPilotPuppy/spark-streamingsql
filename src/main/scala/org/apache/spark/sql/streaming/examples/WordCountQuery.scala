@@ -15,48 +15,36 @@
  * limitations under the License.
  */
 
-package spark.streamsql.examples
+package org.apache.spark.sql.streaming.examples
 
-import org.apache.spark.sql.{SQLContext, Row}
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
+import org.apache.spark.streaming.dstream.ConstantInputDStream
 
-import spark.streamsql.StreamSQLContext
-import spark.streamsql.sources.MessageToRowConverter
+object WordCountQuery {
+  case class SingleWord(word: String)
 
-class MessageDelimiter extends MessageToRowConverter {
-  def toRow(msg: String): Row = Row(msg)
-}
-
-object KafkaDDL {
   def main(args: Array[String]): Unit = {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
     val sc = ssc.sparkContext
 
     val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
-    streamSqlContext.command(
-      """
-        |CREATE TEMPORARY TABLE t_kafka (
-        |  word string
-        |)
-        |USING spark.streamsql.sources.KafkaSource
-        |OPTIONS(
-        |  zkQuorum "localhost:2181",
-        |  groupId  "test",
-        |  topics   "aa:1",
-        |  messageToRow "spark.streamsql.examples.MessageDelimiter")
-      """.stripMargin)
+    import streamSqlContext._
 
-      streamSqlContext.sql(
+    val dummyRDD = sc.parallelize(1 to 10).map(i => SingleWord(s"$i"))
+    val dummyStream = new ConstantInputDStream[SingleWord](ssc, dummyRDD)
+    registerDStreamAsTable(dummyStream, "test")
+    sql(
       """
         |SELECT t.word, COUNT(t.word)
-        |FROM (SELECT * FROM t_kafka) OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS) AS t
+        |FROM (SELECT * FROM test) OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS) AS t
         |GROUP BY t.word
       """.stripMargin)
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTerminationOrTimeout(60 * 1000)
+    ssc.awaitTerminationOrTimeout(18 * 1000)
     ssc.stop()
   }
-
 }

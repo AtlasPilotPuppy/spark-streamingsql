@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package spark.streamsql.examples
+package org.apache.spark.sql.streaming.examples
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.streaming.dstream.ConstantInputDStream
+import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
+import org.apache.spark.streaming.dstream.ConstantInputDStream
 
-import spark.streamsql.StreamSQLContext
-
-object StreamToTableJoin {
+object StreamToStreamWindowJoin {
   case class User(id: Int, name: String)
 
   def main(args: Array[String]): Unit = {
@@ -31,30 +30,29 @@ object StreamToTableJoin {
     val sc = ssc.sparkContext
 
     val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
+    import streamSqlContext._
 
-    val userRDD1 = sc.parallelize(1 to 100).map(i => User(i / 2, s"$i"))
-    val userStream1 = streamSqlContext.createSchemaDStream(
-      new ConstantInputDStream[User](ssc, userRDD1))
+    val userRDD1 = sc.parallelize(1 to 10).map(i => User(i / 2, s"$i"))
+    val userStream1 = new ConstantInputDStream[User](ssc, userRDD1)
     streamSqlContext.registerDStreamAsTable(userStream1, "user1")
 
-    val user2Df = streamSqlContext.sqlContext.createDataFrame(
-      sc.parallelize(1 to 100).map(i => User(i / 5, s"$i")))
-    user2Df.registerTempTable("user2")
+    val userRDD2 = sc.parallelize(1 to 10).map(i => User(i / 5, s"$i"))
+    val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
+    registerDStreamAsTable(userStream2, "user2")
 
-    val userRDD3 = sc.parallelize(1 to 100).map(i => User(i / 10, s"$i"))
-    val userStream3 = streamSqlContext.createSchemaDStream(
-      new ConstantInputDStream[User](ssc, userRDD3))
-    streamSqlContext.registerDStreamAsTable(userStream3, "user3")
-
-    streamSqlContext.sql(
+    sql(
       """
-        |SELECT * FROM user1 a, user2 b, user3 c
-        |WHERE a.id = b.id AND a.id = c.id
+        |SELECT * FROM
+        |user1 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS u
+        |JOIN
+        |user2 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS v
+        |on u.id = v.id
+        |WHERE u.id > 1 and u.id < 3 and v.id > 1 and v.id < 3
       """.stripMargin)
       .foreachRDD { r => r.foreach(println) }
 
     ssc.start()
-    ssc.awaitTerminationOrTimeout(30 * 1000)
+    ssc.awaitTerminationOrTimeout(18 * 1000)
     ssc.stop()
   }
 }

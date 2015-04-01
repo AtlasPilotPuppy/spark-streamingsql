@@ -20,11 +20,11 @@ package org.apache.spark.sql.streaming
 import org.apache.spark.sql.Row
 import org.apache.spark.streaming.dstream.DStream
 
-object StreamPlan {
-  val currentContext = new ThreadLocal[StreamSQLConnector]()
+private[streaming] object StreamPlan {
+  val currentContext = new ThreadLocal[StreamSQLContext]()
 }
 
 trait StreamPlan {
-  def streamSqlConnector = StreamPlan.currentContext.get()
+  def streamSqlContext = StreamPlan.currentContext.get()
   def stream: DStream[Row]
 }

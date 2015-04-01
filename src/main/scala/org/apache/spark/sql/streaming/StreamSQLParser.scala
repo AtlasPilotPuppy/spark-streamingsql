@@ -41,7 +41,8 @@ import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
  * it is the constraint of Spark Streaming.
  * 3. Mix time-based window and row-based window is not supported yet.
  */
-class StreamSQLParser(streamSqlConnector: StreamSQLConnector) extends SqlParser {
+private[streaming]
+class StreamSQLParser(streamSqlConnector: StreamSQLContext) extends SqlParser {
 
   def apply(input: String, exceptionOnError: Boolean): Option[LogicalPlan] = {
     try {

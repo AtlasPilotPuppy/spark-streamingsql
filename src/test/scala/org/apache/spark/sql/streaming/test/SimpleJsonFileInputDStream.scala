@@ -25,8 +25,6 @@ import org.apache.spark.sql._
 import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 
-
-
 class SimpleJsonFileInputDStream[T: ClassTag] (
     sqlc: SQLContext,
     ssc: StreamingContext,

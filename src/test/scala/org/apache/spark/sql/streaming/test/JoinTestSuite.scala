@@ -19,6 +19,7 @@ package org.apache.spark.sql.streaming
 
 import java.util.ArrayList
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 import org.scalatest.concurrent.Eventually
@@ -34,7 +35,7 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
   private var ssc: StreamingContext = null
   private var sqlc: SQLContext = null
   private var streamQlContext: StreamSQLContext = null
-  
+
   def beforeFunction()  {
     val conf = new SparkConf().setAppName("streamSQLTest").setMaster("local[4]")
     sc = new SparkContext(conf)
@@ -99,7 +100,7 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
     createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json", "registration")
     val teacherDF = sqlc.jsonFile("src/test/resources/teacher.json")
     sqlc.registerDataFrameAsTable(teacherDF, "teacher")
-    val resultList = new ArrayList[String]()
+    val resultList = ListBuffer[String]()
     streamQlContext.sql(
       """
          SELECT
@@ -112,16 +113,13 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
              r.teacherId = t.id
       """).foreachRDD { rdd =>
       rdd.collect().foreach { row =>
-        resultList.add(row.mkString(","))
+        resultList += row.mkString(",")
       }
     }
     ssc.start()
     val expectedResult = List("math,bing", "english,bing", "math,google", "english,google")
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
-      assert(resultList.size() == expectedResult.size )
-      for (i <- 0 until resultList.size) {
-        assert(expectedResult(i) == resultList.get(i), "the sql result should be the same as the expected result")
-      }
+      assert(resultList == expectedResult)
     }
   }
 }

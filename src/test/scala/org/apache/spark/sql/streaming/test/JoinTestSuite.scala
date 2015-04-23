@@ -15,19 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.streaming.test
+package org.apache.spark.sql.streaming
 
 import java.util.ArrayList
 
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming._
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
+class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Logging {
 
-class JoinTestSuite extends FunSuite with BeforeAndAfter with Logging {
+  private var sc: SparkContext = null
+  private var ssc: StreamingContext = null
+  private var sqlc: SQLContext = null
+  private var streamQlContext: StreamSQLContext = null
+  
+  def beforeFunction()  {
+    val conf = new SparkConf().setAppName("streamSQLTest").setMaster("local[4]")
+    sc = new SparkContext(conf)
+    ssc = new StreamingContext(sc, Seconds(1))
+    sqlc = new SQLContext(sc)
+    streamQlContext = new StreamSQLContext(ssc, sqlc)
+  }
+
+  def afterFunction()  {
+    if (ssc != null) {
+      ssc.stop()
+    }
+  }
+  before(beforeFunction)
+  after(afterFunction)
 
   private def createStreamingTable(streamSQLContext: StreamSQLContext, sqlc: SQLContext, ssc: StreamingContext, jsonPath: String, tableName: String) = {
     val schema = streamSQLContext.inferJsonSchema(jsonPath)
@@ -36,15 +58,10 @@ class JoinTestSuite extends FunSuite with BeforeAndAfter with Logging {
   }
 
   test("test streaming table join streaming table join RDD table with window function") {
-    val conf = new SparkConf().setAppName("streamSQLTest").setMaster("local[4]")
-    val sc = new SparkContext(conf)
-    val ssc = new StreamingContext(sc, Seconds(1))
-    val sqlc = new SQLContext(sc)
-    val streamQlContext = new StreamSQLContext(ssc, sqlc)
-    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/repository/registration.json", "registration")
-    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/repository/student.json", "student")
-    val teacherRDD = sqlc.jsonFile("src/test/repository/teacher.json")
-    sqlc.registerDataFrameAsTable(teacherRDD, "teacher")
+    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json", "registration")
+    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/student.json", "student")
+    val teacherDF = sqlc.jsonFile("src/test/resources/teacher.json")
+    sqlc.registerDataFrameAsTable(teacherDF, "teacher")
     val resultList = new ArrayList[String]()
     streamQlContext.sql(
       """
@@ -69,25 +86,19 @@ class JoinTestSuite extends FunSuite with BeforeAndAfter with Logging {
       }
     }
     ssc.start()
-    ssc.awaitTerminationOrTimeout(5000)
-    ssc.stop(true)
     val expectedResult = Set("60.0,jack,bing", "80.0,jack,bing", "70.0,lucy,google", "80.0,lucy,google")
-    assert(resultList.size() > 0 )
-    for (i <- 0 until resultList.size) {
-      assert(expectedResult.contains(resultList.get(i)), "the sql result should be within the expected result set")
+    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
+      assert(resultList.size() > 0 )
+      for (i <- 0 until resultList.size) {
+        assert(expectedResult.contains(resultList.get(i)), "the sql result should be within the expected result set")
+      }
     }
-
   }
 
   test("test streaming table join RDD table ") {
-    val conf = new SparkConf().setAppName("streamSQLTest").setMaster("local[4]")
-    val sc = new SparkContext(conf)
-    val ssc = new StreamingContext(sc, Seconds(1))
-    val sqlc = new SQLContext(sc)
-    val streamQlContext = new StreamSQLContext(ssc, sqlc)
-    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/repository/registration.json", "registration")
-    val teacherRDD = sqlc.jsonFile("src/test/repository/teacher.json")
-    sqlc.registerDataFrameAsTable(teacherRDD, "teacher")
+    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json", "registration")
+    val teacherDF = sqlc.jsonFile("src/test/resources/teacher.json")
+    sqlc.registerDataFrameAsTable(teacherDF, "teacher")
     val resultList = new ArrayList[String]()
     streamQlContext.sql(
       """
@@ -105,12 +116,12 @@ class JoinTestSuite extends FunSuite with BeforeAndAfter with Logging {
       }
     }
     ssc.start()
-    ssc.awaitTerminationOrTimeout(4000)
-    ssc.stop(true)
     val expectedResult = List("math,bing", "english,bing", "math,google", "english,google")
-    assert(resultList.size() == expectedResult.size )
-    for (i <- 0 until resultList.size) {
-      assert(expectedResult(i) == resultList.get(i), "the sql result should be the same as the expected result")
+    eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
+      assert(resultList.size() == expectedResult.size )
+      for (i <- 0 until resultList.size) {
+        assert(expectedResult(i) == resultList.get(i), "the sql result should be the same as the expected result")
+      }
     }
   }
 }

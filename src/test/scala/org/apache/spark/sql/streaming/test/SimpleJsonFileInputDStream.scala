@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.streaming.test
+package org.apache.spark.sql.streaming
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -27,17 +27,15 @@ import org.apache.spark.streaming.{StreamingContext, Time}
 
 
 
-class SimpleJsonFileInputDStream[T: ClassTag](sqlc: SQLContext, ssc: StreamingContext, path: String) extends InputDStream[String](ssc) {
-
+class SimpleJsonFileInputDStream[T: ClassTag] (
+    sqlc: SQLContext,
+    ssc: StreamingContext,
+    path: String) extends InputDStream[String](ssc) {
   val jsons = Source.fromFile(path).getLines().toList
   var index = 0
-
   override def start(): Unit = {
-
   }
-
   override def stop() {}
-
   override def compute(validTime: Time): Option[RDD[String]] = {
     val rddOption = Option(ssc.sparkContext.parallelize(List(jsons(index  % jsons.size))))
     index = index + 1

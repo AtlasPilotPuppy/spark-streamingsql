@@ -52,7 +52,12 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
   before(beforeFunction)
   after(afterFunction)
 
-  private def createStreamingTable(streamSQLContext: StreamSQLContext, sqlc: SQLContext, ssc: StreamingContext, jsonPath: String, tableName: String) = {
+  private def createStreamingTable(
+      streamSQLContext: StreamSQLContext,
+      sqlc: SQLContext,
+      ssc: StreamingContext,
+      jsonPath: String,
+      tableName: String) = {
     val schema = streamSQLContext.inferJsonSchema(jsonPath)
     val dstream = new SimpleJsonFileInputDStream(sqlc, ssc, jsonPath)
     streamSQLContext.registerDStreamAsTable(streamSQLContext.jsonDStream(dstream, schema), tableName)

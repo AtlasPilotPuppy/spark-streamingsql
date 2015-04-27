@@ -25,25 +25,20 @@ import org.apache.spark.sql._
 import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 
-class SimpleJsonFileInputDStream[T: ClassTag] (
+class SimpleJsonFileInputDStream (
     sqlc: SQLContext,
     ssc: StreamingContext,
     path: String) extends InputDStream[String](ssc) {
   val jsons = Source.fromFile(path).getLines().toList
   var index = 0
+  
   override def start(): Unit = {
   }
-  override def stop() {}
+  override def stop(): Unit =  {
+  }
   override def compute(validTime: Time): Option[RDD[String]] = {
     val rddOption = Option(ssc.sparkContext.parallelize(List(jsons(index  % jsons.size))))
     index = index + 1
     rddOption
   }
 }
-
-
-
-
-
-
-

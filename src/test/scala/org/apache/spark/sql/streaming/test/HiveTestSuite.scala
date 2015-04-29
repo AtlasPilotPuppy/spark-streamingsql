@@ -18,6 +18,7 @@
 package org.apache.spark.sql.streaming
 
 import scala.concurrent.duration._
+import scala.collection.mutable.ListBuffer
 
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import org.scalatest.concurrent.Eventually
@@ -27,10 +28,8 @@ import org.apache.spark.{SparkConf, SparkContext, Logging}
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
-
-import scala.collection.mutable.ListBuffer
-
 case class Data(name: String, money: Int)
+
 case class People(name: String, items: Array[String])
 
 class HiveTestSuite extends FunSuite with Eventually with BeforeAndAfter with Logging {
@@ -73,8 +72,7 @@ class HiveTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
       assert(resultList == expectedResult)
     }
   }
-
-
+  
   test("test percentile and stddev UDAF")  {
     val dummyRDD = sc.makeRDD(1 to 10).map(i => Data("jack"+i, i))
     val dummyStream = new ConstantInputDStream[Data](ssc, dummyRDD)
@@ -95,6 +93,5 @@ class HiveTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
       }
     }
   }
-
-
+  
 }

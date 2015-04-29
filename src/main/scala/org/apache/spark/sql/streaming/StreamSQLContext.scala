@@ -116,7 +116,8 @@ class StreamSQLContext(
   def sql(sqlText: String): SchemaDStream = {
     SparkPlan.currentContext.set(sqlContext)
     StreamPlan.currentContext.set(this)
-    val plan = streamSqlParser(sqlText, false).getOrElse(sqlContext.parseSql(sqlText))
+    val plan = streamSqlParser(sqlText, false).getOrElse {
+      sqlContext.sql(sqlText).queryExecution.logical }
     new SchemaDStream(this, plan)
   }
 

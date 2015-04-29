@@ -41,7 +41,7 @@ object WordCountQuery {
         |FROM (SELECT * FROM test) OVER (WINDOW '9' SECONDS, SLIDE '3' SECONDS) AS t
         |GROUP BY t.word
       """.stripMargin)
-      .foreachRDD { r => r.foreach(println) }
+      .map(_.copy()).print()
 
     ssc.start()
     ssc.awaitTerminationOrTimeout(18 * 1000)

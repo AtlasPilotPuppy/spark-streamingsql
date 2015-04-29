@@ -60,11 +60,13 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
       tableName: String) = {
     val schema = streamSQLContext.inferJsonSchema(jsonPath)
     val dstream = new SimpleJsonFileInputDStream(sqlc, ssc, jsonPath)
-    streamSQLContext.registerDStreamAsTable(streamSQLContext.jsonDStream(dstream, schema), tableName)
+    streamSQLContext.registerDStreamAsTable(
+      streamSQLContext.jsonDStream(dstream, schema), tableName)
   }
 
   test("test streaming table join streaming table join RDD table with window function") {
-    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json", "registration")
+    createStreamingTable(streamQlContext, sqlc, ssc,
+      "src/test/resources/registration.json", "registration")
     createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/student.json", "student")
     val teacherDF = sqlc.jsonFile("src/test/resources/teacher.json")
     sqlc.registerDataFrameAsTable(teacherDF, "teacher")
@@ -92,17 +94,20 @@ class JoinTestSuite extends FunSuite with Eventually with BeforeAndAfter with Lo
       }
     }
     ssc.start()
-    val expectedResult = Set("60.0,jack,bing", "80.0,jack,bing", "70.0,lucy,google", "80.0,lucy,google")
+    val expectedResult = Set("60.0,jack,bing", "80.0,jack,bing", "70.0,lucy,google",
+      "80.0,lucy,google")
     eventually(timeout(10000 milliseconds), interval(100 milliseconds)) {
       assert(resultList.size() > 0 )
       for (i <- 0 until resultList.size) {
-        assert(expectedResult.contains(resultList.get(i)), "the sql result should be within the expected result set")
+        assert(expectedResult.contains(resultList.get(i)),
+          "the sql result should be within the expected result set")
       }
     }
   }
 
   test("test streaming table join RDD table ") {
-    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json", "registration")
+    createStreamingTable(streamQlContext, sqlc, ssc, "src/test/resources/registration.json",
+      "registration")
     val teacherDF = sqlc.jsonFile("src/test/resources/teacher.json")
     sqlc.registerDataFrameAsTable(teacherDF, "teacher")
     val resultList = ListBuffer[String]()

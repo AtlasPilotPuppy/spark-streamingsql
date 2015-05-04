@@ -14,7 +14,7 @@ Our StreamSQL provides:
 
 ### An Example ###
 
-**Creating StreamSQLContext**
+####Creating StreamSQLContext####
 
 `StreamSQLContext` is the main entry point for all streaming sql related functionalities.
 `StreamSQLContext` can be created by:
@@ -35,7 +35,7 @@ val hiveContext: HiveContext
 val streamSqlContext = new StreamSQLContext(ssc, hiveContext)
 ```
 
-**Running SQL on DStreams**
+####Running SQL on DStreams####
 
 ```scala
 case class Person(name: String, age: String)
@@ -57,7 +57,7 @@ ssc.awaitTerminationOrTimeout(30 * 1000)
 ssc.stop()
 ```
 
-**Stream To Stream/Table Join**
+####Stream To Stream/Table Join####
 
 ```scala
 val userStream: DStream[User]
@@ -74,7 +74,7 @@ sql("SELECT * FROM user JOIN item ON user.id = history.id").print()
 
 ```
 
-**Time-based Window Join/Aggregation**
+###Time-based Window Join/Aggregation####
 
 ```scala
 sql(
@@ -95,7 +95,7 @@ sql(
   """.stripMargin)
 ```
   
-**External Source API support for Kafka Source **
+####External Source API support for Kafka source####
 
 ```scala
 streamSqlContext.command(

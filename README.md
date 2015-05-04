@@ -6,7 +6,7 @@ and [Spark Streaming](https://github.com/apache/spark/tree/master/streaming), ai
 SQL-style queries on data streams. Our target is to advance the progress of Catalyst as well as
 Spark Streaming by bridging the gap between structured data queries and stream processing.
 
-Our StreamSQL provides:
+Our **spark-streamsql** provides:
 
 1. Full SQL support on streaming data and extended time-based aggregation and join.
 2. Easy mutual operation between DStream and SQL.
@@ -16,8 +16,7 @@ Our StreamSQL provides:
 
 ####Creating StreamSQLContext####
 
-`StreamSQLContext` is the main entry point for all streaming sql related functionalities.
-`StreamSQLContext` can be created by:
+`StreamSQLContext` is the main entry point for all streaming sql related functionalities. `StreamSQLContext` can be created by:
 
 ```scala
 val ssc: StreamingContext
@@ -74,7 +73,7 @@ sql("SELECT * FROM user JOIN item ON user.id = history.id").print()
 
 ```
 
-###Time-based Window Join/Aggregation####
+####Time-based Window Join/Aggregation####
 
 ```scala
 sql(

@@ -8,19 +8,20 @@ Spark Streaming by bridging the gap between structured data queries and stream p
 
 Our **spark-streamsql** provides:
 
-1. Full SQL support on streaming data and extended time-based aggregation and join.
+1. SQL support on streaming data with extended time-based aggregation and join.
 2. Easy mutual operation between DStream and SQL.
 3. Table and stream mutual operation with a simple query.
+4. External source API support for streaming source.
 
-### An Example ###
+### Quick Start ###
 
-####Creating StreamSQLContext####
+#### Creating StreamSQLContext ####
 
 `StreamSQLContext` is the main entry point for all streaming sql related functionalities. `StreamSQLContext` can be created by:
 
 ```scala
 val ssc: StreamingContext
-val sqlContext: sqlContext
+val sqlContext: SQLContext
 
 val streamSqlContext = new StreamSQLContext(ssc, sqlContext)
 ```
@@ -34,7 +35,7 @@ val hiveContext: HiveContext
 val streamSqlContext = new StreamSQLContext(ssc, hiveContext)
 ```
 
-####Running SQL on DStreams####
+#### Running SQL on DStreams ####
 
 ```scala
 case class Person(name: String, age: String)
@@ -43,7 +44,7 @@ case class Person(name: String, age: String)
 val people: DStream[Person] = ssc.socketTextStream(serverIP, serverPort)
   .map(_.split(","))
   .map(p => Person(p(0), p(1).toInt))
-  
+
 val schemaPeopleStream = streamSqlContext.createSchemaDStream(people)
 schemaPeopleStream.registerAsTable("people")
 
@@ -56,7 +57,7 @@ ssc.awaitTerminationOrTimeout(30 * 1000)
 ssc.stop()
 ```
 
-####Stream To Stream/Table Join####
+#### Stream Relation Join ####
 
 ```scala
 val userStream: DStream[User]
@@ -73,7 +74,7 @@ sql("SELECT * FROM user JOIN item ON user.id = history.id").print()
 
 ```
 
-####Time-based Window Join/Aggregation####
+#### Time Based Windowing Join/Aggregation ####
 
 ```scala
 sql(
@@ -86,15 +87,18 @@ sql(
 sql(
   """
     |SELECT * FROM
-    |user1 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS u
+    |  user1 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS u
     |JOIN
-    |user2 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS v
-    |on u.id = v.id
+    |  user2 OVER (WINDOW '9' SECONDS, SLIDE '6' SECONDS) AS v
+    |ON u.id = v.id
     |WHERE u.id > 1 and u.id < 3 and v.id > 1 and v.id < 3
   """.stripMargin)
 ```
-  
-####External Source API support for Kafka source####
+
+Note: For time-based windowing join, the window size and sliding size should be the for all the
+joined streams. This is the limitation of Spark Streaming.
+
+#### External Source API Support for Kafka ####
 
 ```scala
 streamSqlContext.command(
@@ -115,13 +119,22 @@ For more examples please checkout the [examples](https://github.com/Intel-bigdat
 
 ### How to Build and Deploy ###
 
-**spark-streamsql** is built with sbt, you could use sbt related command to test/compile/package.
- 
-**spark-streamsql** is built on Spark-1.3, you could change the Spark version in `Build.scala` 
+**spark-streamsql** is built with sbt, you could use sbt related commands to test/compile/package.
+
+**spark-streamsql** is built on Spark-1.3, you could change the Spark version in `Build.scala`
 to the version you wanted, currently **spark-streamsql** can be worked with Spark version 1.3+.
 
-To use **spark-streamsql**, put the packaged jar into your environment where Spark could access, 
+To use **spark-streamsql**, put the packaged jar into your environment where Spark could access,
 you could use `spark-submit --jars` or other ways.
+
+---
+
+**Current Limitations:**
+
+1. `write` related semantics like `INSERT` are not supported in streaming query.
+2. DDL related clauses are supported with limitations.
+3. The coverage of DML is depended on SparkSQL.
+4. No DataFrame support for streaming data.
 
 ---
 

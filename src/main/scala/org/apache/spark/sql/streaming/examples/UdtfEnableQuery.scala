@@ -33,7 +33,7 @@ object UdtfEnabledQuery {
     val streamSqlContext = new StreamSQLContext(ssc, hiveContext)
     import hiveContext.implicits._
     import streamSqlContext.createSchemaDStream
-    val dummyRDD = sc.makeRDD(1 to 3).map(i => People("jack"+i,Array("book","gun")))
+    val dummyRDD = sc.makeRDD(1 to 3).map(i => People(s"jack$i", Array("book", "gun")))
     val dummyStream = new ConstantInputDStream[People](ssc, dummyRDD)
     streamSqlContext.registerDStreamAsTable(dummyStream, "people")
     streamSqlContext.sql(

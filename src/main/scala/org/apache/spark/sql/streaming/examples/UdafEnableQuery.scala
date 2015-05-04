@@ -17,23 +17,23 @@
 
 package org.apache.spark.sql.streaming.examples
 
+import scala.collection.mutable.ListBuffer
+
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import org.apache.spark.streaming.dstream.ConstantInputDStream
 
-import scala.collection.mutable.ListBuffer
-
-case class Data(name: String, money: Int)
-
 object UdafEnabledQuery {
+
+  case class Data(name: String, money: Int)
 
   def main(args: Array[String]): Unit = {
     val ssc = new StreamingContext("local[10]", "test", Duration(3000))
     val sc = ssc.sparkContext
     val hiveContext = new HiveContext(sc)
     val streamSQlContext = new StreamSQLContext(ssc, hiveContext)
-    val dummyRDD = sc.makeRDD(1 to 10).map(i => Data("jack"+i, i))
+    val dummyRDD = sc.makeRDD(1 to 10).map(i => Data(s"jack$i", i))
     val dummyStream = new ConstantInputDStream[Data](ssc, dummyRDD)
     val schemaStream = streamSQlContext.createSchemaDStream(dummyStream)
     streamSQlContext.registerDStreamAsTable(schemaStream, "data")

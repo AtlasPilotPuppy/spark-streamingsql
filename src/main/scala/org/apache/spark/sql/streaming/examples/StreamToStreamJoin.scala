@@ -40,8 +40,7 @@ object StreamToStreamJoin {
     val userStream2 = new ConstantInputDStream[User](ssc, userRDD2)
     registerDStreamAsTable(userStream2, "user2")
 
-    sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id")
-      .foreachRDD { r => r.foreach(println) }
+    sql("SELECT * FROM user1 JOIN user2 ON user1.id = user2.id").map(_.copy()).print()
 
     ssc.start()
     ssc.awaitTerminationOrTimeout(30 * 1000)

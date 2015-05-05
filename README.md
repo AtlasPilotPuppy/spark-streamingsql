@@ -95,7 +95,7 @@ sql(
   """.stripMargin)
 ```
 
-Note: For time-based windowing join, the window size and sliding size should be the for all the
+Note: For time-based windowing join, the window size and sliding size should be same for all the
 joined streams. This is the limitation of Spark Streaming.
 
 #### External Source API Support for Kafka ####
@@ -133,7 +133,7 @@ you could use `spark-submit --jars` or other ways.
 
 1. `write` related semantics like `INSERT` are not supported in streaming query.
 2. DDL related clauses are supported with limitations.
-3. The coverage of DML is depended on SparkSQL.
+3. The semantic coverage of DML is depended on SparkSQL.
 4. No DataFrame support for streaming data.
 
 ---

@@ -8,7 +8,7 @@ Spark Streaming by bridging the gap between structured data queries and stream p
 
 Our **spark-streamsql** provides:
 
-1. SQL support on both streaming and table data with extended time-based aggregation and join.
+1. SQL support on both streaming and table data with extended time-based windowing aggregation and join.
 2. Easy mutual operation between DStream and SQL.
 3. External source API support for streaming source.
 
@@ -132,7 +132,7 @@ you could use `spark-submit --jars` or other ways.
 
 Q1. What kind of interfaces are available in the current release version?
 
-The current version only supports Scala DSL programming model. Spark-SQL CLI and JDBC drive is not
+The current version only supports Scala DSL programming model. Spark-SQL CLI and JDBC drive are not
 supported so far.
 
 Q2. Does it support schema inference from existing Table?
@@ -155,7 +155,7 @@ Q6. How to run customized functions in spark-streamsql ( to say UDTF, UDAF, UDF 
 
 Yes, you could register UDF through StreamSQLContext.
 
-Q7. Can I insert (overwrite) query results to Table or external source (HBase)?
+Q7. Can I insert (overwrite) query results to Table or external store (HBase)?
 
 Not support, you need to handle this through Scala code.
 

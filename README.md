@@ -8,7 +8,8 @@ Spark Streaming by bridging the gap between structured data queries and stream p
 
 Our **spark-streamsql** provides:
 
-1. SQL support on both streaming and table data with extended time-based windowing aggregation and join.
+1. Extend SQL support for streaming data (e.g. query against streams, stream relation joins, time
+   based windowing join/aggregation)
 2. Easy mutual operation between DStream and SQL.
 3. External source API support for streaming source.
 

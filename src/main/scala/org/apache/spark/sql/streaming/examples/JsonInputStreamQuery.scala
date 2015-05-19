@@ -32,10 +32,13 @@ object JsonInputStreamQuery {
     val sc = ssc.sparkContext
     val streamSqlContext = new StreamSQLContext(ssc, new SQLContext(sc))
     import streamSqlContext._
+    // Here we read data line by line from a given file and then put it into a queue DStream.
+    // You can replace any kind of String type DStream here including kafka DStream.
     val queue = new SynchronizedQueue[RDD[String]]()
     Source.fromFile("src/main/resources/student.json").getLines().foreach(msg =>
       queue.enqueue(sc.parallelize(List(msg))))
     val queueDStream = ssc.queueStream[String](queue)
+    // We can infer the schema of json automatically by using inferJsonSchema
     val schema = streamSqlContext.inferJsonSchema("src/main/resources/student.json")
     streamSqlContext.registerDStreamAsTable(
       streamSqlContext.jsonDStream(queueDStream, schema), "jsonTable")

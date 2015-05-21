@@ -18,13 +18,13 @@
 package org.apache.spark.sql.streaming.examples
 
 import scala.collection.mutable.SynchronizedQueue
+import scala.io.Source
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.streaming.StreamSQLContext
 import org.apache.spark.streaming.{Duration, StreamingContext}
 
-import scala.io.Source
 
 object JsonInputStreamQuery {
   def main(args: Array[String]): Unit = {

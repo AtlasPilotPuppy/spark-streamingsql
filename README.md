@@ -1,4 +1,4 @@
-spark-streamsql
+Streaming SQL for Apache Spark
 ===
 
 **spark-streamsql** is a project based on [Catalyst](https://github.com/apache/spark/tree/master/sql)

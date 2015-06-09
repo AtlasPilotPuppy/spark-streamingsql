@@ -18,7 +18,6 @@
 package org.apache.spark.sql.streaming
 
 import scala.io.Source
-import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -31,7 +30,7 @@ class SimpleJsonFileInputDStream (
     path: String) extends InputDStream[String](ssc) {
   val jsons = Source.fromFile(path).getLines().toList
   var index = 0
-  
+
   override def start(): Unit = {
   }
   override def stop(): Unit =  {

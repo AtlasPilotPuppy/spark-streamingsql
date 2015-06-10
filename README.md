@@ -1,12 +1,12 @@
 Streaming SQL for Apache Spark
 ===
 
-**spark-streamsql** is a project based on [Catalyst](https://github.com/apache/spark/tree/master/sql)
+**Streaming SQL for Apache Spark** is a project based on [Catalyst](https://github.com/apache/spark/tree/master/sql)
 and [Spark Streaming](https://github.com/apache/spark/tree/master/streaming), aiming to support
 SQL-style queries on data streams. Our target is to advance the progress of Catalyst as well as
 Spark Streaming by bridging the gap between structured data queries and stream processing.
 
-Our **spark-streamsql** provides:
+Our Streaming SQL for Apache Spark (hereinafter referred to as Streaming SQL) provides:
 
 1. SQL support on both stream and table data with extended time-based windowing aggregation and join.
 2. Easy mutual operation between DStream and SQL.
@@ -118,12 +118,12 @@ For more examples please checkout the [examples](https://github.com/Intel-bigdat
 
 ### How to Build and Deploy ###
 
-**spark-streamsql** is built with sbt, you could use sbt related commands to test/compile/package.
+Streaming SQL is built with sbt, you could use sbt related commands to test/compile/package.
 
-**spark-streamsql** is built on Spark-1.3, you could change the Spark version in `Build.scala`
-to the version you wanted, currently **spark-streamsql** can be worked with Spark version 1.3+.
+Streaming SQL is built on Spark-1.3, you could change the Spark version in `Build.scala`
+to the version you wanted, currently Streaming SQL can be worked with Spark version 1.3+.
 
-To use **spark-streamsql**, put the packaged jar into your environment where Spark could access,
+To use Streaming SQL, put the packaged jar into your environment where Spark could access,
 you could use `spark-submit --jars` or other ways.
 
 ---
@@ -158,6 +158,10 @@ Yes, you could register UDF through StreamSQLContext.
 Q7. Can I insert (overwrite) query results to Table or external store (HBase)?
 
 Not support, you need to handle this through Scala code.
+
+---
+
+Contact: [Jerry Shao](mailto: saisai.shao@intel.com), [Grace Huang](mailto: jie.huang@intel.com)
 
 ---
 

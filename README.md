@@ -161,7 +161,7 @@ Not support, you need to handle this through Scala code.
 
 ---
 
-Contact: [Jerry Shao](mailto: saisai.shao@intel.com), [Grace Huang](mailto: jie.huang@intel.com)
+Contact: [Jerry Shao](mailto: saisai.shao@intel.com), [Grace Huang](mailto: jie.huang@intel.com), [Jiangang Duan](mailto: jiangang.duan@intel.com)
 
 ---
 
